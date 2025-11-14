@@ -8,3 +8,4 @@ import androidx.navigation.NavHostController
 fun SettingsScreen(navController: NavHostController) {
     Text("Settings Screen")
 }
+
