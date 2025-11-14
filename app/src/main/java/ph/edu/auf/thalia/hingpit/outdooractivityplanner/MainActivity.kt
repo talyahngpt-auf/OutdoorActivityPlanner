@@ -19,6 +19,7 @@ import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.ActivityEntit
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.WeatherCache
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.WeatherRepository
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.theme.OutdoorActivityPlannerTheme
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.Constants
 
 class MainActivity : ComponentActivity() {
     private lateinit var realm: Realm
@@ -34,7 +35,7 @@ class MainActivity : ComponentActivity() {
         realm = Realm.open(config)
 
         // Initialize API
-        val weatherApi = RetrofitFactory.create("https://api.openweathermap.org/data/2.5/")
+        val weatherApi = RetrofitFactory.create(Constants.WEATHER_BASE_URL)
             .create(WeatherApiService::class.java)
         weatherRepository = WeatherRepository(weatherApi, realm)
 
@@ -126,8 +127,8 @@ fun TestScreen(realm: Realm, weatherRepository: WeatherRepository) {
                 scope.launch {
                     testResults = "Testing Weather API...\n"
                     try {
-                        val API_KEY = "YOUR_API_KEY" // Replace with real key
-                        val response = weatherRepository.fetchCurrentByCity("Manila", API_KEY)
+                        val API_KEY = Constants.WEATHER_API_KEY
+                        val response = weatherRepository.fetchCurrentByCity("Angeles", API_KEY)
 
                         if (response != null) {
                             testResults += "✅ API Call successful!\n"
@@ -155,10 +156,18 @@ fun TestScreen(realm: Realm, weatherRepository: WeatherRepository) {
                 scope.launch {
                     testResults = "Testing Weather Cache...\n"
                     try {
+                        // Delete existing cache if any
+                        realm.write {
+                            val existing = query(WeatherCache::class, "city == $0", "Angeles").first().find()
+                            if (existing != null) {
+                                delete(existing)
+                                testResults += "🗑️ Cleared existing cache\n"
+                            }
+                        }
                         // Save to cache
                         realm.write {
                             copyToRealm(WeatherCache().apply {
-                                city = "Manila"
+                                city = "Angeles"
                                 temp = 28.5
                                 condition = "Clear"
                                 icon = "01d"
@@ -169,7 +178,7 @@ fun TestScreen(realm: Realm, weatherRepository: WeatherRepository) {
                         testResults += "✅ Cached weather data saved\n"
 
                         // Retrieve from cache
-                        val cached = weatherRepository.getCached("Manila")
+                        val cached = weatherRepository.getCached("Angeles")
                         if (cached != null) {
                             testResults += "✅ Retrieved: ${cached.city}, ${cached.temp}°C\n"
                             testResults += "\n✅ Cache Test PASSED!\n\n"
@@ -214,7 +223,7 @@ fun TestScreen(realm: Realm, weatherRepository: WeatherRepository) {
                 scope.launch {
                     testResults = "Testing Retrofit Setup...\n"
                     try {
-                        val retrofit = RetrofitFactory.create("https://api.openweathermap.org/data/2.5/")
+                        val retrofit = RetrofitFactory.create(Constants.WEATHER_BASE_URL)
                         testResults += "✅ Retrofit instance created\n"
                         testResults += "✅ Base URL configured\n"
                         testResults += "✅ HTTP logging enabled\n"
