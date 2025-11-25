@@ -1,36 +1,45 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network
 
-import com.squareup.moshi.Json
+import com.google.gson.annotations.SerializedName
 
 data class ForecastResponse(
-    @Json(name = "lat")
+    @SerializedName("lat")
     val latitude: Double,
 
-    @Json(name = "lon")
+    @SerializedName("lon")
     val longitude: Double,
 
-    @Json(name = "timezone")
+    @SerializedName("timezone")
     val timezone: String,
 
-    @Json(name = "daily")
+    @SerializedName("daily")
     val daily: List<DailyForecast>
 )
 
 data class DailyForecast(
+    @SerializedName("dt")
     val dt: Long, // timestamp
 
-    @Json(name = "temp")
+    @SerializedName("temp")
     val temperature: TemperatureInfo,
 
-    @Json(name = "weather")
+    @SerializedName("weather")
     val weather: List<WeatherDescription>,
 
+    @SerializedName("humidity")
     val humidity: Int,
-    val wind_speed: Double
+
+    @SerializedName("wind_speed")
+    val windSpeed: Double
 )
 
 data class TemperatureInfo(
+    @SerializedName("day")
     val day: Double,
+
+    @SerializedName("min")
     val min: Double,
+
+    @SerializedName("max")
     val max: Double
 )
