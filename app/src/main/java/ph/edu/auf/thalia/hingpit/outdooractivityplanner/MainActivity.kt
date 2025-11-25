@@ -10,6 +10,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
 import io.realm.kotlin.Realm
 import io.realm.kotlin.RealmConfiguration
 import kotlinx.coroutines.launch
@@ -18,12 +25,15 @@ import ph.edu.auf.thalia.hingpit.outdooractivityplanner.apis.interfaces.WeatherA
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.ActivityEntity
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.WeatherCache
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.WeatherRepository
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.providers.LocationProvider
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.theme.OutdoorActivityPlannerTheme
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.Constants
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.WeatherViewModel
 
 class MainActivity : ComponentActivity() {
     private lateinit var realm: Realm
     private lateinit var weatherRepository: WeatherRepository
+    private lateinit var locationProvider: LocationProvider
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,13 +49,21 @@ class MainActivity : ComponentActivity() {
             .create(WeatherApiService::class.java)
         weatherRepository = WeatherRepository(weatherApi, realm)
 
+        // Initialize LocationProvider
+        locationProvider = LocationProvider(this)
+
         setContent {
             OutdoorActivityPlannerTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    TestScreen(realm, weatherRepository)
+                    // Create ViewModel with factory
+                    val viewModel: WeatherViewModel = viewModel(
+                        factory = WeatherViewModelFactory(weatherRepository, locationProvider)
+                    )
+
+                    WeatherTestScreen(viewModel)
                 }
             }
         }
@@ -57,11 +75,37 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// ViewModel Factory to pass dependencies
+class WeatherViewModelFactory(
+    private val repository: WeatherRepository,
+    private val locationProvider: LocationProvider
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(WeatherViewModel::class.java)) {
+            return WeatherViewModel(repository, locationProvider) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun TestScreen(realm: Realm, weatherRepository: WeatherRepository) {
+fun WeatherTestScreen(viewModel: WeatherViewModel) {
     val scope = rememberCoroutineScope()
-    var testResults by remember { mutableStateOf("Ready to test components...\n\n") }
     val scrollState = rememberScrollState()
+
+    // Permission handling
+    val locationPermissionState = rememberPermissionState(
+        permission = android.Manifest.permission.ACCESS_FINE_LOCATION
+    )
+
+    // State variables
+    var cityInput by remember { mutableStateOf("") }
+    val weatherData by viewModel.currentWeather.collectAsState()
+    val forecast by viewModel.forecast.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
     Column(
         modifier = Modifier
@@ -70,189 +114,351 @@ fun TestScreen(realm: Realm, weatherRepository: WeatherRepository) {
             .verticalScroll(scrollState)
     ) {
         Text(
-            text = "Component Testing",
+            text = "Weather API Testing",
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Test Buttons
-        Button(
-            onClick = {
-                scope.launch {
-                    testResults = "Testing Realm (ActivityEntity)...\n"
-                    try {
-                        // Create
-                        realm.write {
-                            copyToRealm(ActivityEntity().apply {
-                                title = "Test Activity"
-                                description = "Testing Realm"
-                                date = "Nov 14, 2025"
-                            })
-                        }
-                        testResults += "✅ CREATE: Activity added\n"
+        // Permission Status
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = if (locationPermissionState.status.isGranted)
+                    MaterialTheme.colorScheme.primaryContainer
+                else
+                    MaterialTheme.colorScheme.errorContainer
+            )
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = if (locationPermissionState.status.isGranted)
+                        "✅ Location Permission Granted"
+                    else
+                        "❌ Location Permission Required",
+                    style = MaterialTheme.typography.titleMedium
+                )
 
-                        // Read
-                        val activities = realm.query(ActivityEntity::class).find()
-                        testResults += "✅ READ: Found ${activities.size} activity(ies)\n"
+                if (!locationPermissionState.status.isGranted) {
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                        // Update
-                        realm.write {
-                            val first = query(ActivityEntity::class).first().find()
-                            first?.title = "Updated Activity"
-                        }
-                        testResults += "✅ UPDATE: Activity updated\n"
+                    val rationale = if (locationPermissionState.status.shouldShowRationale) {
+                        "Location is needed to fetch weather for your current area"
+                    } else {
+                        "Location permission is required for this feature"
+                    }
 
-                        // Delete
-                        realm.write {
-                            val all = query(ActivityEntity::class).find()
-                            delete(all)
-                        }
-                        testResults += "✅ DELETE: Activities cleared\n"
+                    Text(text = rationale, style = MaterialTheme.typography.bodySmall)
 
-                        testResults += "\n✅ Realm Test PASSED!\n\n"
-                    } catch (e: Exception) {
-                        testResults += "❌ ERROR: ${e.message}\n\n"
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = { locationPermissionState.launchPermissionRequest() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Grant Permission")
                     }
                 }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("1. Test Realm (Local DB)")
+            }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = {
-                scope.launch {
-                    testResults = "Testing Weather API...\n"
-                    try {
-                        val API_KEY = Constants.WEATHER_API_KEY
-                        val response = weatherRepository.fetchCurrentByCity("Angeles", API_KEY)
-
-                        if (response != null) {
-                            testResults += "✅ API Call successful!\n"
-                            testResults += "City: ${response.city}\n"
-                            testResults += "Temp: ${response.main.temp}°C\n"
-                            testResults += "Condition: ${response.weather.firstOrNull()?.main}\n"
-                            testResults += "\n✅ Weather API Test PASSED!\n\n"
-                        } else {
-                            testResults += "⚠️ API returned null (check API key or connection)\n\n"
-                        }
-                    } catch (e: Exception) {
-                        testResults += "❌ ERROR: ${e.message}\n\n"
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("2. Test Weather API")
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Button(
-            onClick = {
-                scope.launch {
-                    testResults = "Testing Weather Cache...\n"
-                    try {
-                        // Delete existing cache if any
-                        realm.write {
-                            val existing = query(WeatherCache::class, "city == $0", "Angeles").first().find()
-                            if (existing != null) {
-                                delete(existing)
-                                testResults += "🗑️ Cleared existing cache\n"
-                            }
-                        }
-                        // Save to cache
-                        realm.write {
-                            copyToRealm(WeatherCache().apply {
-                                city = "Angeles"
-                                temp = 28.5
-                                condition = "Clear"
-                                icon = "01d"
-                                humidity = 70
-                                wind = 5.2
-                            })
-                        }
-                        testResults += "✅ Cached weather data saved\n"
-
-                        // Retrieve from cache
-                        val cached = weatherRepository.getCached("Angeles")
-                        if (cached != null) {
-                            testResults += "✅ Retrieved: ${cached.city}, ${cached.temp}°C\n"
-                            testResults += "\n✅ Cache Test PASSED!\n\n"
-                        }
-                    } catch (e: Exception) {
-                        testResults += "❌ ERROR: ${e.message}\n\n"
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("3. Test Weather Cache")
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Button(
-            onClick = {
-                scope.launch {
-                    testResults = "Testing Repository Pattern...\n"
-                    try {
-                        // Test repository methods
-                        testResults += "✅ WeatherRepository initialized\n"
-                        testResults += "✅ fetchCurrentByCity() method exists\n"
-                        testResults += "✅ fetchForecast() method exists\n"
-                        testResults += "✅ getCached() method exists\n"
-                        testResults += "\n✅ Repository Test PASSED!\n\n"
-                    } catch (e: Exception) {
-                        testResults += "❌ ERROR: ${e.message}\n\n"
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("4. Test Repository Pattern")
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Button(
-            onClick = {
-                scope.launch {
-                    testResults = "Testing Retrofit Setup...\n"
-                    try {
-                        val retrofit = RetrofitFactory.create(Constants.WEATHER_BASE_URL)
-                        testResults += "✅ Retrofit instance created\n"
-                        testResults += "✅ Base URL configured\n"
-                        testResults += "✅ HTTP logging enabled\n"
-                        testResults += "✅ Timeout settings applied\n"
-                        testResults += "\n✅ Retrofit Test PASSED!\n\n"
-                    } catch (e: Exception) {
-                        testResults += "❌ ERROR: ${e.message}\n\n"
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("5. Test Retrofit Factory")
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Test Results Display
+        // City Search Section
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant
             )
         ) {
-            Text(
-                text = testResults,
-                modifier = Modifier.padding(16.dp),
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Test by City Name",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                // Info card about city naming
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                    )
+                ) {
+                    Text(
+                        text = "💡 Tip: Try without 'City' suffix first (e.g., 'Bacolor' instead of 'Bacolor City'). The app will auto-correct if needed.",
+                        modifier = Modifier.padding(8.dp),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = cityInput,
+                    onValueChange = { cityInput = it },
+                    label = { Text("Enter City Name") },
+                    placeholder = { Text("e.g., Angeles, Manila, Tokyo") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = {
+                        if (cityInput.isNotBlank()) {
+                            scope.launch {
+                                viewModel.getCurrentWeatherByCity(
+                                    cityInput.trim(),
+                                    Constants.WEATHER_API_KEY
+                                )
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = cityInput.isNotBlank() && !isLoading
+                ) {
+                    Text(if (isLoading) "Loading..." else "Fetch Weather")
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Quick Test Buttons
+        Text(
+            text = "Quick Test Cities",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = {
+                    scope.launch {
+                        viewModel.getCurrentWeatherByCity("Angeles", Constants.WEATHER_API_KEY)
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                enabled = !isLoading
+            ) {
+                Text("Angeles")
+            }
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        viewModel.getCurrentWeatherByCity("Manila", Constants.WEATHER_API_KEY)
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                enabled = !isLoading
+            ) {
+                Text("Manila")
+            }
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        viewModel.getCurrentWeatherByCity("Tokyo", Constants.WEATHER_API_KEY)
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                enabled = !isLoading
+            ) {
+                Text("Tokyo")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Location-based Test (requires permission)
+        if (locationPermissionState.status.isGranted) {
+            Button(
+                onClick = {
+                    scope.launch {
+                        viewModel.getCurrentLocation()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading
+            ) {
+                Text("Get Weather at My Location")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Loading Indicator
+        if (isLoading) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text("Loading weather data...")
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Error Message
+        errorMessage?.let { error ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Text(
+                    text = "⚠️ $error",
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Weather Results Display
+        weatherData?.let { weather ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "✅ Weather Data Retrieved",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    HorizontalDivider()
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "📍 Location: ${weather.city}",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    Text(
+                        text = "🌡️ Temperature: ${weather.main.temp}°C",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+
+                    Text(
+                        text = "🌡️ Feels Like: ${weather.main.feelsLike}°C",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Text(
+                        text = "💧 Humidity: ${weather.main.humidity}%",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Text(
+                        text = "💨 Wind Speed: ${weather.wind.speed} m/s",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    weather.weather.firstOrNull()?.let { condition ->
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "☁️ Condition: ${condition.main}",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+
+                        Text(
+                            text = "📝 Description: ${condition.description}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+
+                        Text(
+                            text = "🔖 Icon Code: ${condition.icon}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "🌍 Coordinates:",
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        text = "Lat: ${weather.coord.lat}, Lon: ${weather.coord.lon}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Forecast Data (if available)
+        forecast?.let { forecastData ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "📅 7-Day Forecast",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    forecastData.daily.take(7).forEachIndexed { index, daily ->
+                        Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                            Text(
+                                text = "Day ${index + 1}",
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Text(
+                                text = "🌡️ ${daily.temperature.min}°C - ${daily.temperature.max}°C (Day: ${daily.temperature.day}°C)",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Text(
+                                text = "☁️ ${daily.weather.firstOrNull()?.main ?: "N/A"}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+
+                            if (index < forecastData.daily.size - 1) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                HorizontalDivider()
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

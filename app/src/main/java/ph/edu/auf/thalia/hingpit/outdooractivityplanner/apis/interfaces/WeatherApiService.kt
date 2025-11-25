@@ -13,6 +13,13 @@ interface WeatherApiService {
         @Query("appid") apiKey: String
     ): CurrentWeatherResponse
 
+    @GET("weather")
+    suspend fun currentByCoordinates(
+        @Query("lat") lat: Double,
+        @Query("lon") lon: Double,
+        @Query("units") units: String = "metric",
+        @Query("appid") apiKey: String
+    ): CurrentWeatherResponse
     @GET("onecall")
     suspend fun oneCall(
         @Query("lat") lat: Double,

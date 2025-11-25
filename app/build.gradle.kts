@@ -63,7 +63,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
 
-
+    // Retrofit
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
@@ -73,6 +73,12 @@ dependencies {
 
     // Realm Kotlin
     implementation(libs.realm.library)
+
+    // Location Services
+    implementation(libs.play.services.location)
+
+    // Permission Handling
+    implementation(libs.accompanist.permissions)
 
     // Tests
     testImplementation(libs.junit)

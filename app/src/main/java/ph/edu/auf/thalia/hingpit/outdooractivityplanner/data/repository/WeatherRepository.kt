@@ -32,6 +32,20 @@ class WeatherRepository(
         }
     }
 
+    suspend fun fetchCurrentByCoordinates(lat: Double, lon: Double, apiKey: String): CurrentWeatherResponse? {
+        return try {
+            val response = api.currentByCoordinates(lat = lat, lon = lon, apiKey = apiKey)
+
+            // Save to cache using city name from response
+            cacheCurrentWeather(response.city, response)
+
+            response
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
     private suspend fun cacheCurrentWeather(city: String, data: CurrentWeatherResponse) {
         realm.write {
             val existing = query<WeatherCache>("city == $0", city).first().find()
