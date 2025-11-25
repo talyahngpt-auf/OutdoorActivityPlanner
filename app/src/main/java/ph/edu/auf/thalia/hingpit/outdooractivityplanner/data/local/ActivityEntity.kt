@@ -10,4 +10,10 @@ class ActivityEntity : RealmObject {
     var title: String = ""
     var description: String = ""
     var date: String = ""
+    var category: String = ""
+    var icon: String = ""
+    var weatherCondition: String = ""
+    var temperature: Double = 0.0
+    var isCompleted: Boolean = false
+    var createdAt: Long = System.currentTimeMillis()
 }
