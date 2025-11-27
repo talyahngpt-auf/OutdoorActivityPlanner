@@ -3,19 +3,21 @@ agp = "8.4.0"
 kotlin = "1.9.24"
 compose-bom = "2024.04.00"
 compose-compiler = "1.5.14"
-realm = "1.16.0"
+room = "2.6.1" # ⭐ NEW: Room Database
 retrofit = "2.9.0"
 okhttp = "4.12.0"
 glide = "4.16.0"
 coroutines = "1.7.3"
-# ⭐ NEW versions - note: use hyphens not dots in version names
 play-services-location = "21.3.0"
 accompanist-permissions = "0.37.3"
+ksp = "1.9.24-1.0.20" # ⭐ NEW: KSP for Room
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version = "1.12.0" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version = "2.7.0" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version = "1.8.2" }
+
 
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose-bom" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
@@ -24,21 +26,28 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version = "2.7.7" }
 
+
 # Coroutines
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
+
 # Glide
 glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
 
-# Realm
-realm-library = { group = "io.realm.kotlin", name = "library-base", version.ref = "realm" }
+
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+
 
 # Location Services
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "play-services-location" }
 
+
 # Permission Handling
 accompanist-permissions = { group = "com.google.accompanist", name = "accompanist-permissions", version.ref = "accompanist-permissions" }
+
 
 junit = { group = "junit", name = "junit", version = "4.13.2" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version = "1.1.5" }
@@ -47,7 +56,8 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-realm = { id = "io.realm.kotlin", version.ref = "realm" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

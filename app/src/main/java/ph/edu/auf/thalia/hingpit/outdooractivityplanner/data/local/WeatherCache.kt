@@ -1,14 +1,18 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local
 
-import io.realm.kotlin.types.RealmObject
-import io.realm.kotlin.types.annotations.PrimaryKey
 
-class WeatherCache : RealmObject {
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+
+@Entity(tableName = "weather_cache")
+data class WeatherCache(
     @PrimaryKey
-    var city: String = ""
-    var temp: Double = 0.0
-    var condition: String = ""
-    var icon: String = ""
-    var humidity: Int = 0
-    var wind: Double = 0.0
-}
+    val city: String = "",
+    val temp: Double = 0.0,
+    val condition: String = "",
+    val icon: String = "",
+    val humidity: Int = 0,
+    val wind: Double = 0.0,
+    val cachedAt: Long = System.currentTimeMillis()
+)

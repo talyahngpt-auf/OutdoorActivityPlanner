@@ -1,30 +1,35 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository
 
-import io.realm.kotlin.Realm
-import io.realm.kotlin.ext.query
+
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.apis.interfaces.WeatherApiService
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.WeatherCache
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.dao.WeatherCacheDao
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.CurrentWeatherResponse
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.ForecastResponse
 
+
 class WeatherRepository(
     private val api: WeatherApiService,
-    private val realm: Realm
+    private val weatherCacheDao: WeatherCacheDao
 ) {
 
+
     // -------------------------------------------------------
-    // FETCH CURRENT WEATHER (with local caching fallback)
+    // FETCH CURRENT WEATHER BY CITY (with local caching fallback)
     // -------------------------------------------------------
     suspend fun fetchCurrentByCity(city: String, apiKey: String): CurrentWeatherResponse? {
         return try {
             val response = api.currentByCity(city = city, apiKey = apiKey)
 
+
             // Save to cache
             cacheCurrentWeather(city, response)
+
 
             response
         } catch (e: Exception) {
             e.printStackTrace()
+
 
             // fallback → return cached weather (if any)
             getCached(city)
@@ -32,12 +37,18 @@ class WeatherRepository(
         }
     }
 
+
+    // -------------------------------------------------------
+    // FETCH CURRENT WEATHER BY COORDINATES
+    // -------------------------------------------------------
     suspend fun fetchCurrentByCoordinates(lat: Double, lon: Double, apiKey: String): CurrentWeatherResponse? {
         return try {
             val response = api.currentByCoordinates(lat = lat, lon = lon, apiKey = apiKey)
 
+
             // Save to cache using city name from response
             cacheCurrentWeather(response.city, response)
+
 
             response
         } catch (e: Exception) {
@@ -46,23 +57,22 @@ class WeatherRepository(
         }
     }
 
-    private suspend fun cacheCurrentWeather(city: String, data: CurrentWeatherResponse) {
-        realm.write {
-            val existing = query<WeatherCache>("city == $0", city).first().find()
-            if (existing != null) delete(existing)
 
-            copyToRealm(
-                WeatherCache().apply {
-                    this.city = city
-                    this.temp = data.main.temp
-                    this.condition = data.weather.firstOrNull()?.main ?: ""
-                    this.icon = data.weather.firstOrNull()?.icon ?: ""
-                    this.humidity = data.main.humidity
-                    this.wind = data.wind.speed
-                }
-            )
-        }
+    private suspend fun cacheCurrentWeather(city: String, data: CurrentWeatherResponse) {
+        val weatherCache = WeatherCache(
+            city = city,
+            temp = data.main.temp,
+            condition = data.weather.firstOrNull()?.main ?: "",
+            icon = data.weather.firstOrNull()?.icon ?: "",
+            humidity = data.main.humidity,
+            wind = data.wind.speed,
+            cachedAt = System.currentTimeMillis()
+        )
+
+
+        weatherCacheDao.insertWeatherCache(weatherCache)
     }
+
 
     // -------------------------------------------------------
     // FETCH FORECAST (OneCall API)
@@ -76,10 +86,11 @@ class WeatherRepository(
         }
     }
 
+
     // -------------------------------------------------------
     // GET CACHED WEATHER (offline support)
     // -------------------------------------------------------
-    fun getCached(city: String): WeatherCache? {
-        return realm.query<WeatherCache>("city == $0", city).first().find()
+    suspend fun getCached(city: String): WeatherCache? {
+        return weatherCacheDao.getWeatherCache(city)
     }
 }

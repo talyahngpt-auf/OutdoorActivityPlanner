@@ -1,19 +1,18 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local
 
-import io.realm.kotlin.types.RealmObject
-import io.realm.kotlin.types.annotations.PrimaryKey
-import org.mongodb.kbson.ObjectId
 
-class ActivityEntity : RealmObject {
-    @PrimaryKey
-    var id: ObjectId = ObjectId()
-    var title: String = ""
-    var description: String = ""
-    var date: String = ""
-    var category: String = ""
-    var icon: String = ""
-    var weatherCondition: String = ""
-    var temperature: Double = 0.0
-    var isCompleted: Boolean = false
-    var createdAt: Long = System.currentTimeMillis()
-}
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+
+@Entity(tableName = "activities")
+data class ActivityEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    val title: String = "",
+    val description: String = "",
+    val date: String = "",
+    val weatherCondition: String = "",
+    val isCompleted: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis()
+)
