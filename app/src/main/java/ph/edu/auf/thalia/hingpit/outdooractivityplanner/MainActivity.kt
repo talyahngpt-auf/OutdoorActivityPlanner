@@ -1,60 +1,56 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner
 
-
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
-import kotlinx.coroutines.launch
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.apis.factory.RetrofitFactory
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.apis.interfaces.WeatherApiService
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.AppDatabase
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.ActivityRepository
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.WeatherRepository
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.providers.LocationProvider
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.ActivityPlannerScreen
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.ForecastScreen
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.HomeScreen
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.SettingsScreen
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.theme.OutdoorActivityPlannerTheme
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.Constants
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.ActivityViewModel
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.WeatherViewModel
-
 
 class MainActivity : ComponentActivity() {
     private lateinit var database: AppDatabase
     private lateinit var weatherRepository: WeatherRepository
+    private lateinit var activityRepository: ActivityRepository
     private lateinit var locationProvider: LocationProvider
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
         // Initialize Room Database
         database = AppDatabase.getDatabase(this)
-
 
         // Initialize API
         val weatherApi = RetrofitFactory.create(Constants.WEATHER_BASE_URL)
             .create(WeatherApiService::class.java)
 
-
-        // Initialize Repository with Room DAO
+        // Initialize Repositories
         weatherRepository = WeatherRepository(weatherApi, database.weatherCacheDao())
-
+        activityRepository = ActivityRepository(database.activityDao())
 
         // Initialize LocationProvider
         locationProvider = LocationProvider(this)
-
 
         setContent {
             OutdoorActivityPlannerTheme {
@@ -62,24 +58,65 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Create ViewModel with factory
-                    val viewModel: WeatherViewModel = viewModel(
-                        factory = WeatherViewModelFactory(weatherRepository, locationProvider)
+                    MainApp(
+                        weatherRepository = weatherRepository,
+                        activityRepository = activityRepository,
+                        locationProvider = locationProvider
                     )
-
-
-                    WeatherTestScreen(viewModel)
                 }
             }
         }
     }
-
-
-    // No need to close database - Room handles it automatically
 }
 
+@Composable
+fun MainApp(
+    weatherRepository: WeatherRepository,
+    activityRepository: ActivityRepository,
+    locationProvider: LocationProvider
+) {
+    val navController = rememberNavController()
 
-// ViewModel Factory to pass dependencies
+    // Create ViewModels
+    val weatherViewModel: WeatherViewModel = viewModel(
+        factory = WeatherViewModelFactory(weatherRepository, locationProvider)
+    )
+
+    val activityViewModel: ActivityViewModel = viewModel(
+        factory = ActivityViewModelFactory(activityRepository)
+    )
+
+    NavHost(
+        navController = navController,
+        startDestination = "home"
+    ) {
+        composable("home") {
+            HomeScreen(
+                navController = navController,
+                weatherViewModel = weatherViewModel,
+                activityViewModel = activityViewModel
+            )
+        }
+
+        composable("activities") {
+            ActivityPlannerScreen(navController)
+        }
+
+        composable("forecast") {
+            ForecastScreen(
+                navController = navController,
+                weatherViewModel = weatherViewModel,
+                activityViewModel = activityViewModel
+            )
+        }
+
+        composable("settings") {
+            SettingsScreen(navController)
+        }
+    }
+}
+
+// ViewModel Factory for WeatherViewModel
 class WeatherViewModelFactory(
     private val repository: WeatherRepository,
     private val locationProvider: LocationProvider
@@ -93,473 +130,15 @@ class WeatherViewModelFactory(
     }
 }
 
-
-@OptIn(ExperimentalPermissionsApi::class)
-@Composable
-fun WeatherTestScreen(viewModel: WeatherViewModel) {
-    val scope = rememberCoroutineScope()
-    val scrollState = rememberScrollState()
-
-
-    // Permission handling
-    val locationPermissionState = rememberPermissionState(
-        permission = android.Manifest.permission.ACCESS_FINE_LOCATION
-    )
-
-
-    // State variables
-    var cityInput by remember { mutableStateOf("") }
-    val weatherData by viewModel.currentWeather.collectAsState()
-    val forecast by viewModel.forecast.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(scrollState)
-    ) {
-        Text(
-            text = "Weather API Testing",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-
-        // Permission Status
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = if (locationPermissionState.status.isGranted)
-                    MaterialTheme.colorScheme.primaryContainer
-                else
-                    MaterialTheme.colorScheme.errorContainer
-            )
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = if (locationPermissionState.status.isGranted)
-                        "✅ Location Permission Granted"
-                    else
-                        "❌ Location Permission Required",
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-
-                if (!locationPermissionState.status.isGranted) {
-                    Spacer(modifier = Modifier.height(8.dp))
-
-
-                    val rationale = if (locationPermissionState.status.shouldShowRationale) {
-                        "Location is needed to fetch weather for your current area"
-                    } else {
-                        "Location permission is required for this feature"
-                    }
-
-
-                    Text(text = rationale, style = MaterialTheme.typography.bodySmall)
-
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-
-                    Button(
-                        onClick = { locationPermissionState.launchPermissionRequest() },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Grant Permission")
-                    }
-                }
-            }
+// ViewModel Factory for ActivityViewModel
+class ActivityViewModelFactory(
+    private val repository: ActivityRepository
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ActivityViewModel::class.java)) {
+            return ActivityViewModel(repository) as T
         }
-
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-
-        // City Search Section
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Test by City Name",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-
-                // Info card about city naming
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(8.dp)) {
-                        Text(
-                            text = "💡 Tips:",
-                            style = MaterialTheme.typography.titleSmall,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-                        Text(
-                            text = "• Add country code for accuracy (e.g., 'Angeles,PH' not just 'Angeles')",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Text(
-                            text = "• Try without 'City' suffix first (e.g., 'Bacolor' not 'Bacolor City')",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Text(
-                            text = "• The app auto-corrects common Philippine cities",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-
-                OutlinedTextField(
-                    value = cityInput,
-                    onValueChange = { cityInput = it },
-                    label = { Text("Enter City Name") },
-                    placeholder = { Text("e.g., Angeles, Manila, Tokyo") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-
-                Button(
-                    onClick = {
-                        if (cityInput.isNotBlank()) {
-                            scope.launch {
-                                viewModel.getCurrentWeatherByCity(
-                                    cityInput.trim(),
-                                    Constants.WEATHER_API_KEY
-                                )
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = cityInput.isNotBlank() && !isLoading
-                ) {
-                    Text(if (isLoading) "Loading..." else "Fetch Weather")
-                }
-            }
-        }
-
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-
-        // Quick Test Buttons
-        Text(
-            text = "Quick Test Cities",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Button(
-                onClick = {
-                    scope.launch {
-                        viewModel.getCurrentWeatherByCity("Angeles,PH", Constants.WEATHER_API_KEY)
-                    }
-                },
-                modifier = Modifier.weight(1f),
-                enabled = !isLoading
-            ) {
-                Text("Angeles")
-            }
-
-
-            Button(
-                onClick = {
-                    scope.launch {
-                        viewModel.getCurrentWeatherByCity("Manila,PH", Constants.WEATHER_API_KEY)
-                    }
-                },
-                modifier = Modifier.weight(1f),
-                enabled = !isLoading
-            ) {
-                Text("Manila")
-            }
-
-
-            Button(
-                onClick = {
-                    scope.launch {
-                        viewModel.getCurrentWeatherByCity("Tokyo,JP", Constants.WEATHER_API_KEY)
-                    }
-                },
-                modifier = Modifier.weight(1f),
-                enabled = !isLoading
-            ) {
-                Text("Tokyo")
-            }
-        }
-
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-
-        // Location-based Test (requires permission)
-        if (locationPermissionState.status.isGranted) {
-            val currentLat by viewModel.latitude.collectAsState()
-            val currentLon by viewModel.longitude.collectAsState()
-
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "📍 Device Location",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-
-                    if (currentLat != null && currentLon != null) {
-                        Text(
-                            text = "Lat: $currentLat, Lon: $currentLon",
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                    } else {
-                        Text(
-                            text = "Location not fetched yet",
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                    }
-
-
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                viewModel.getCurrentLocation()
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isLoading
-                    ) {
-                        Text("Get Weather at My Location")
-                    }
-                }
-            }
-
-
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-
-        // Loading Indicator
-        if (isLoading) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Text("Loading weather data...")
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-
-        // Error Message
-        errorMessage?.let { error ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
-                Text(
-                    text = "⚠️ $error",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-
-        // Weather Results Display
-        weatherData?.let { weather ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "✅ Weather Data Retrieved",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-
-                    HorizontalDivider()
-
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-
-                    Text(
-                        text = "📍 Location: ${weather.city}",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-
-
-                    Text(
-                        text = "🌡️ Temperature: ${weather.main.temp}°C",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-
-
-                    Text(
-                        text = "🌡️ Feels Like: ${weather.main.feelsLike}°C",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
-
-                    Text(
-                        text = "💧 Humidity: ${weather.main.humidity}%",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
-
-                    Text(
-                        text = "💨 Wind Speed: ${weather.wind.speed} m/s",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-
-                    weather.weather.firstOrNull()?.let { condition ->
-                        HorizontalDivider()
-                        Spacer(modifier = Modifier.height(8.dp))
-
-
-                        Text(
-                            text = "☁️ Condition: ${condition.main}",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-
-
-                        Text(
-                            text = "📝 Description: ${condition.description}",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-
-
-                        Text(
-                            text = "🔖 Icon Code: ${condition.icon}",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    HorizontalDivider()
-                    Spacer(modifier = Modifier.height(8.dp))
-
-
-                    Text(
-                        text = "🌍 Coordinates:",
-                        style = MaterialTheme.typography.titleSmall
-                    )
-                    Text(
-                        text = "Lat: ${weather.coord.lat}, Lon: ${weather.coord.lon}",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-
-
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-
-        // Forecast Data (if available)
-        forecast?.let { forecastData ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "📅 7-Day Forecast",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    HorizontalDivider()
-                    Spacer(modifier = Modifier.height(8.dp))
-
-
-                    forecastData.daily.take(7).forEachIndexed { index, daily ->
-                        Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                            Text(
-                                text = "Day ${index + 1}",
-                                style = MaterialTheme.typography.titleSmall
-                            )
-                            Text(
-                                text = "🌡️ ${daily.temperature.min}°C - ${daily.temperature.max}°C (Day: ${daily.temperature.day}°C)",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                            Text(
-                                text = "☁️ ${daily.weather.firstOrNull()?.main ?: "N/A"}",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-
-
-                            if (index < forecastData.daily.size - 1) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                HorizontalDivider()
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

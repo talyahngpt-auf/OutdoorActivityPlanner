@@ -25,7 +25,7 @@ object RetrofitFactory {
         return Retrofit.Builder()
             .baseUrl(baseUrl)
             .client(client)
-            .addConverterFactory(GsonConverterFactory.create()) // <- Gson here
+            .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 }

@@ -1,18 +1,15 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository
 
-
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.apis.interfaces.WeatherApiService
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.WeatherCache
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.dao.WeatherCacheDao
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.CurrentWeatherResponse
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.ForecastResponse
 
-
 class WeatherRepository(
     private val api: WeatherApiService,
     private val weatherCacheDao: WeatherCacheDao
 ) {
-
 
     // -------------------------------------------------------
     // FETCH CURRENT WEATHER BY CITY (with local caching fallback)
@@ -21,22 +18,18 @@ class WeatherRepository(
         return try {
             val response = api.currentByCity(city = city, apiKey = apiKey)
 
-
             // Save to cache
             cacheCurrentWeather(city, response)
-
 
             response
         } catch (e: Exception) {
             e.printStackTrace()
-
 
             // fallback → return cached weather (if any)
             getCached(city)
             null
         }
     }
-
 
     // -------------------------------------------------------
     // FETCH CURRENT WEATHER BY COORDINATES
@@ -45,10 +38,8 @@ class WeatherRepository(
         return try {
             val response = api.currentByCoordinates(lat = lat, lon = lon, apiKey = apiKey)
 
-
             // Save to cache using city name from response
             cacheCurrentWeather(response.city, response)
-
 
             response
         } catch (e: Exception) {
@@ -56,7 +47,6 @@ class WeatherRepository(
             null
         }
     }
-
 
     private suspend fun cacheCurrentWeather(city: String, data: CurrentWeatherResponse) {
         val weatherCache = WeatherCache(
@@ -69,23 +59,20 @@ class WeatherRepository(
             cachedAt = System.currentTimeMillis()
         )
 
-
         weatherCacheDao.insertWeatherCache(weatherCache)
     }
 
-
     // -------------------------------------------------------
-    // FETCH FORECAST (OneCall API)
+    // FETCH FORECAST (Free 5-day/3-hour API)
     // -------------------------------------------------------
-    suspend fun fetchForecast(lat: Double, lon: Double, apiKey: String): ForecastResponse? {
+    suspend fun fetchForecast(lat: Double, lon: Double, apiKey: String): ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.FiveDayForecastResponse? {
         return try {
-            api.oneCall(lat = lat, lon = lon, apiKey = apiKey)
+            api.fiveDayForecast(lat = lat, lon = lon, apiKey = apiKey)
         } catch (e: Exception) {
             e.printStackTrace()
             null
         }
     }
-
 
     // -------------------------------------------------------
     // GET CACHED WEATHER (offline support)

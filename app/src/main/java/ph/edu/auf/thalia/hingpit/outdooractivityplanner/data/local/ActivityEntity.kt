@@ -12,6 +12,7 @@ data class ActivityEntity(
     val title: String = "",
     val description: String = "",
     val date: String = "",
+    val time: String = "",
     val weatherCondition: String = "",
     val isCompleted: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()

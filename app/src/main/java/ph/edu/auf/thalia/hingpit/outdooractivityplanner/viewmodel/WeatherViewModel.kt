@@ -10,40 +10,32 @@ import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.ForecastRes
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.WeatherRepository
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.providers.LocationProvider
 
-
 class WeatherViewModel(
     private val repository: WeatherRepository,
     private val locationProvider: LocationProvider
 ) : ViewModel() {
 
-
     // Current weather state
     private val _currentWeather = MutableStateFlow<CurrentWeatherResponse?>(null)
     val currentWeather = _currentWeather.asStateFlow()
 
-
     // Forecast state
-    private val _forecast = MutableStateFlow<ForecastResponse?>(null)
+    private val _forecast = MutableStateFlow<ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.FiveDayForecastResponse?>(null)
     val forecast = _forecast.asStateFlow()
-
 
     // Location coordinates
     private val _latitude = MutableStateFlow<Double?>(null)
     val latitude = _latitude.asStateFlow()
 
-
     private val _longitude = MutableStateFlow<Double?>(null)
     val longitude = _longitude.asStateFlow()
-
 
     // Loading and error states
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
-
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage = _errorMessage.asStateFlow()
-
 
     // Get current device location and fetch weather
     fun getCurrentLocation() {
@@ -52,21 +44,17 @@ class WeatherViewModel(
                 _isLoading.value = true
                 _errorMessage.value = null
 
-
                 // Clear previous weather data to show fresh fetch
                 _currentWeather.value = null
                 _forecast.value = null
 
-
                 // Await location properly
                 val location = locationProvider.getLastLocation()
-
 
                 if (location != null) {
                     // Update coordinates
                     _latitude.value = location.latitude
                     _longitude.value = location.longitude
-
 
                     // Fetch weather with new coordinates
                     val response = repository.fetchCurrentByCoordinates(
@@ -75,10 +63,8 @@ class WeatherViewModel(
                         apiKey = "d4a747d49224357d4fab7cc012649c8b"
                     )
 
-
                     if (response != null) {
                         _currentWeather.value = response
-
 
                         // Fetch forecast
                         val forecastResponse = repository.fetchForecast(
@@ -102,7 +88,6 @@ class WeatherViewModel(
         }
     }
 
-
     // Fetch current weather by city name (for testing)
     fun getCurrentWeatherByCity(city: String, apiKey: String) {
         viewModelScope.launch {
@@ -110,11 +95,9 @@ class WeatherViewModel(
                 _isLoading.value = true
                 _errorMessage.value = null
 
-
                 // Clear previous data
                 _currentWeather.value = null
                 _forecast.value = null
-
 
                 // First, try with Philippines country code for common PH cities
                 var response = if (isLikelyPhilippineCity(city)) {
@@ -122,7 +105,6 @@ class WeatherViewModel(
                 } else {
                     repository.fetchCurrentByCity(city, apiKey)
                 }
-
 
                 // If first attempt fails and city contains "City", try without it
                 if (response == null && city.contains("City", ignoreCase = true)) {
@@ -135,7 +117,6 @@ class WeatherViewModel(
                     }
                 }
 
-
                 // If still null and city doesn't have "City", try adding it
                 if (response == null && !city.contains("City", ignoreCase = true)) {
                     val cityWithSuffix = "$city City"
@@ -147,11 +128,9 @@ class WeatherViewModel(
                     }
                 }
 
-
                 if (response != null) {
                     _currentWeather.value = response
                     _errorMessage.value = null // Clear any "Trying..." message
-
 
                     // After getting current weather, fetch forecast using coordinates
                     val forecastResponse = repository.fetchForecast(
@@ -171,7 +150,6 @@ class WeatherViewModel(
             }
         }
     }
-
 
     // Helper function to identify likely Philippine cities
     private fun isLikelyPhilippineCity(city: String): Boolean {
@@ -197,7 +175,6 @@ class WeatherViewModel(
         )
         return philippineCities.any { city.lowercase().contains(it) }
     }
-
 
     // Get cached weather for offline support
     fun getCachedWeather(city: String) {
