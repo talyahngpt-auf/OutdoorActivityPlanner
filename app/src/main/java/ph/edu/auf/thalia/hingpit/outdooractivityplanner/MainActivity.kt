@@ -1,5 +1,6 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner
 
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,11 +24,15 @@ import ph.edu.auf.thalia.hingpit.outdooractivityplanner.providers.LocationProvid
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.ActivityPlannerScreen
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.ForecastScreen
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.HomeScreen
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.TodayScreen
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.SettingsScreen
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.theme.OutdoorActivityPlannerTheme
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.Constants
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.ActivityViewModel
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.WeatherViewModel
+
+
+
 
 class MainActivity : ComponentActivity() {
     private lateinit var database: AppDatabase
@@ -35,22 +40,28 @@ class MainActivity : ComponentActivity() {
     private lateinit var activityRepository: ActivityRepository
     private lateinit var locationProvider: LocationProvider
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+
         // Initialize Room Database
         database = AppDatabase.getDatabase(this)
+
 
         // Initialize API
         val weatherApi = RetrofitFactory.create(Constants.WEATHER_BASE_URL)
             .create(WeatherApiService::class.java)
 
+
         // Initialize Repositories
         weatherRepository = WeatherRepository(weatherApi, database.weatherCacheDao())
         activityRepository = ActivityRepository(database.activityDao())
 
+
         // Initialize LocationProvider
         locationProvider = LocationProvider(this)
+
 
         setContent {
             OutdoorActivityPlannerTheme {
@@ -69,6 +80,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
+
+
 @Composable
 fun MainApp(
     weatherRepository: WeatherRepository,
@@ -77,14 +91,17 @@ fun MainApp(
 ) {
     val navController = rememberNavController()
 
+
     // Create ViewModels
     val weatherViewModel: WeatherViewModel = viewModel(
         factory = WeatherViewModelFactory(weatherRepository, locationProvider)
     )
 
+
     val activityViewModel: ActivityViewModel = viewModel(
         factory = ActivityViewModelFactory(activityRepository)
     )
+
 
     NavHost(
         navController = navController,
@@ -98,9 +115,20 @@ fun MainApp(
             )
         }
 
+
+        composable("today") {
+            TodayScreen(
+                navController = navController,
+                activityViewModel = activityViewModel,
+                weatherViewModel = weatherViewModel
+            )
+        }
+
+
         composable("activities") {
             ActivityPlannerScreen(navController)
         }
+
 
         composable("forecast") {
             ForecastScreen(
@@ -110,11 +138,15 @@ fun MainApp(
             )
         }
 
+
         composable("settings") {
             SettingsScreen(navController)
         }
     }
 }
+
+
+
 
 // ViewModel Factory for WeatherViewModel
 class WeatherViewModelFactory(
@@ -130,6 +162,9 @@ class WeatherViewModelFactory(
     }
 }
 
+
+
+
 // ViewModel Factory for ActivityViewModel
 class ActivityViewModelFactory(
     private val repository: ActivityRepository
@@ -142,3 +177,4 @@ class ActivityViewModelFactory(
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
+

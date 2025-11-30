@@ -1,5 +1,8 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens
 
+
+
+
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,10 +30,14 @@ import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.components.WeatherCar
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.ActivitySuggestion
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.ActivitySuggestions
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.Constants
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.QuickEmojiSelector
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.ActivityViewModel
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.WeatherViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+
+
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -41,29 +48,47 @@ fun HomeScreen(
 ) {
     val scope = rememberCoroutineScope()
 
+
+
+
     // Weather state
     val weatherData by weatherViewModel.currentWeather.collectAsState()
     val forecast by weatherViewModel.forecast.collectAsState()
     val isLoadingWeather by weatherViewModel.isLoading.collectAsState()
     val weatherError by weatherViewModel.errorMessage.collectAsState()
 
+
+
+
     // Activity suggestions state
     var activitySuggestions by remember { mutableStateOf<List<ActivitySuggestion>>(emptyList()) }
     var refreshKey by remember { mutableStateOf(0) }
+
+
+
 
     // Dialog states
     var showAddDialog by remember { mutableStateOf(false) }
     var showCustomActivityDialog by remember { mutableStateOf(false) }
     var selectedActivity by remember { mutableStateOf<ActivitySuggestion?>(null) }
 
+
+
+
     // Search state
     var searchQuery by remember { mutableStateOf("") }
     var showSearchBar by remember { mutableStateOf(false) }
+
+
+
 
     // Permission handling
     val locationPermissionState = rememberPermissionState(
         permission = android.Manifest.permission.ACCESS_FINE_LOCATION
     )
+
+
+
 
     // Update suggestions when weather changes or refresh
     LaunchedEffect(weatherData, refreshKey) {
@@ -73,6 +98,9 @@ fun HomeScreen(
             activitySuggestions = ActivitySuggestions.getSuggestions(condition, temp, limit = 5)
         }
     }
+
+
+
 
     Scaffold(
         topBar = {
@@ -105,6 +133,9 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
+
+
+
 
             // Permission Request Card
             if (!locationPermissionState.status.isGranted) {
@@ -142,6 +173,9 @@ fun HomeScreen(
                 }
             }
 
+
+
+
             // Action Buttons Row
             item {
                 Row(
@@ -161,6 +195,9 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(if (showSearchBar) "Close" else "Search City")
                     }
+
+
+
 
                     // Current Location Button
                     Button(
@@ -182,6 +219,9 @@ fun HomeScreen(
                     }
                 }
             }
+
+
+
 
             // Search Bar (animated, only shows when showSearchBar is true)
             if (showSearchBar) {
@@ -207,6 +247,9 @@ fun HomeScreen(
                             shape = MaterialTheme.shapes.medium
                         )
 
+
+
+
                         Button(
                             onClick = {
                                 if (searchQuery.isNotBlank()) {
@@ -225,6 +268,9 @@ fun HomeScreen(
                     }
                 }
             }
+
+
+
 
             // Loading State
             if (isLoadingWeather) {
@@ -250,6 +296,9 @@ fun HomeScreen(
                     }
                 }
             }
+
+
+
 
             // Error State
             weatherError?.let { error ->
@@ -285,11 +334,17 @@ fun HomeScreen(
                 }
             }
 
+
+
+
             // Current Weather Card
             weatherData?.let { weather ->
                 item {
                     ImprovedWeatherCard(weather = weather)
                 }
+
+
+
 
                 // 5-Day Forecast
                 forecast?.let { forecastData ->
@@ -310,6 +365,9 @@ fun HomeScreen(
                         }
                     }
 
+
+
+
                     item {
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -320,6 +378,9 @@ fun HomeScreen(
                         }
                     }
                 }
+
+
+
 
                 // Today's Suggested Activities
                 item {
@@ -339,6 +400,9 @@ fun HomeScreen(
                     }
                 }
 
+
+
+
                 items(activitySuggestions) { suggestion ->
                     ActivityCard(
                         activity = suggestion,
@@ -349,6 +413,9 @@ fun HomeScreen(
                     )
                 }
             }
+
+
+
 
             // Empty state
             if (weatherData == null && !isLoadingWeather && weatherError == null) {
@@ -382,9 +449,15 @@ fun HomeScreen(
                 }
             }
 
+
+
+
             item { Spacer(modifier = Modifier.height(80.dp)) } // Extra space for FAB
         }
     }
+
+
+
 
     // Add to Plan Dialog (from suggestions)
     if (showAddDialog && selectedActivity != null) {
@@ -407,6 +480,9 @@ fun HomeScreen(
         )
     }
 
+
+
+
     // Custom Activity Dialog (FAB)
     if (showCustomActivityDialog) {
         AddActivityDialog(
@@ -428,6 +504,9 @@ fun HomeScreen(
         )
     }
 }
+
+
+
 
 @Composable
 fun ImprovedWeatherCard(weather: ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.CurrentWeatherResponse) {
@@ -454,7 +533,13 @@ fun ImprovedWeatherCard(weather: ph.edu.auf.thalia.hingpit.outdooractivityplanne
                     modifier = Modifier.size(80.dp)
                 )
 
+
+
+
                 Spacer(modifier = Modifier.width(16.dp))
+
+
+
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -475,7 +560,13 @@ fun ImprovedWeatherCard(weather: ph.edu.auf.thalia.hingpit.outdooractivityplanne
                 }
             }
 
+
+
+
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+
+
 
             // Weather details in a grid
             Row(
@@ -502,6 +593,9 @@ fun ImprovedWeatherCard(weather: ph.edu.auf.thalia.hingpit.outdooractivityplanne
     }
 }
 
+
+
+
 @Composable
 fun WeatherDetailItem(
     label: String,
@@ -519,12 +613,18 @@ fun WeatherDetailItem(
     }
 }
 
+
+
+
 @Composable
 fun SimpleForecastCard(dailySummary: DailyForecastSummary) {
     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val date = dateFormat.parse(dailySummary.date) ?: Date()
     val dayFormat = SimpleDateFormat("EEE", Locale.getDefault())
     val dayOfWeek = dayFormat.format(date)
+
+
+
 
     Card(
         modifier = Modifier.width(100.dp),
@@ -544,7 +644,13 @@ fun SimpleForecastCard(dailySummary: DailyForecastSummary) {
                 fontWeight = FontWeight.Bold
             )
 
+
+
+
             Spacer(modifier = Modifier.height(8.dp))
+
+
+
 
             AsyncImage(
                 model = "https://openweathermap.org/img/wn/${dailySummary.weather.firstOrNull()?.icon}@2x.png",
@@ -552,7 +658,13 @@ fun SimpleForecastCard(dailySummary: DailyForecastSummary) {
                 modifier = Modifier.size(40.dp)
             )
 
+
+
+
             Spacer(modifier = Modifier.height(8.dp))
+
+
+
 
             Text(
                 text = "${dailySummary.maxTemp.toInt()}°",
@@ -568,11 +680,14 @@ fun SimpleForecastCard(dailySummary: DailyForecastSummary) {
     }
 }
 
+
+
+
 // Universal Activity Dialog (works for both suggestions and custom activities)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddActivityDialog(
-    activity: ActivitySuggestion?, // null for custom activity
+    activity: ActivitySuggestion?,
     weatherData: ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.CurrentWeatherResponse?,
     onDismiss: () -> Unit,
     onConfirm: (title: String, description: String, date: String, time: String, icon: String) -> Unit
@@ -581,10 +696,12 @@ fun AddActivityDialog(
     var description by remember { mutableStateOf(activity?.description ?: "") }
     var selectedIcon by remember { mutableStateOf(activity?.icon ?: "📌") }
 
+
     // Date & Time states
     val calendar = remember { Calendar.getInstance() }
     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+
 
     var selectedDate by remember { mutableStateOf(dateFormat.format(calendar.time)) }
     var selectedTime by remember {
@@ -601,6 +718,7 @@ fun AddActivityDialog(
         )
     }
 
+
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = calendar.timeInMillis
     )
@@ -609,15 +727,10 @@ fun AddActivityDialog(
         initialMinute = selectedTime.split(":")[1].toInt()
     )
 
+
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
-    var showIconPicker by remember { mutableStateOf(false) }
 
-    val iconOptions = listOf(
-        "📌", "🏃", "🚴", "🏊", "⛰️", "🏖️", "🧘", "🎨", "📚", "🍳",
-        "🎮", "🎬", "☕", "🛍️", "🎵", "⚽", "🏀", "🎾", "🏐", "🏋️",
-        "🧗", "🚶", "🏕️", "🎣", "🌳", "🌺", "🥾", "🎯", "🎪", "🎭"
-    )
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -630,83 +743,107 @@ fun AddActivityDialog(
             }
         },
         text = {
-            Column {
-                // Weather info
-                weatherData?.let { weather ->
-                    Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                        shape = MaterialTheme.shapes.small
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+            LazyColumn {
+                item {
+                    // Weather info
+                    weatherData?.let { weather ->
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                            shape = MaterialTheme.shapes.small
                         ) {
-                            Text(
-                                text = "Weather: ${weather.weather.firstOrNull()?.main ?: ""}",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                            Text(
-                                text = "${weather.main.temp.toInt()}°C",
-                                style = MaterialTheme.typography.bodySmall
-                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Weather: ${weather.weather.firstOrNull()?.main ?: ""}",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Text(
+                                    text = "${weather.main.temp.toInt()}°C",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
                         }
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
+                }
+
+
+                item {
+                    // Quick Emoji Selector with full keyboard access
+                    QuickEmojiSelector(
+                        selectedEmoji = selectedIcon,
+                        onEmojiChange = { selectedIcon = it },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                // Icon Picker Button
-                OutlinedButton(
-                    onClick = { showIconPicker = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = selectedIcon, style = MaterialTheme.typography.headlineSmall)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Choose Icon")
+
+                item {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("Activity Title") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        leadingIcon = {
+                            Text(
+                                text = selectedIcon,
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                        }
+                    )
+
+
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Activity Title") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+                item {
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Description (Optional)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2,
+                        maxLines = 3
+                    )
 
-                Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Description (Optional)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 2,
-                    maxLines = 3
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedButton(
-                    onClick = { showDatePicker = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.DateRange, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Date: $selectedDate")
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
 
-                OutlinedButton(
-                    onClick = { showTimePicker = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.DateRange, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Time: $selectedTime")
+                item {
+                    OutlinedButton(
+                        onClick = { showDatePicker = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.DateRange, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Date: $selectedDate")
+                    }
+
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+
+                item {
+                    OutlinedButton(
+                        onClick = { showTimePicker = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.DateRange, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Time: $selectedTime")
+                    }
                 }
             }
         },
@@ -729,42 +866,6 @@ fun AddActivityDialog(
         }
     )
 
-    // Icon Picker Dialog
-    if (showIconPicker) {
-        AlertDialog(
-            onDismissRequest = { showIconPicker = false },
-            title = { Text("Choose an Icon") },
-            text = {
-                LazyColumn {
-                    items(iconOptions.chunked(5)) { rowIcons ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            rowIcons.forEach { icon ->
-                                IconButton(
-                                    onClick = {
-                                        selectedIcon = icon
-                                        showIconPicker = false
-                                    }
-                                ) {
-                                    Text(
-                                        text = icon,
-                                        style = MaterialTheme.typography.headlineMedium
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showIconPicker = false }) {
-                    Text("Close")
-                }
-            }
-        )
-    }
 
     // Date Picker Dialog
     if (showDatePicker) {
@@ -789,6 +890,7 @@ fun AddActivityDialog(
             DatePicker(state = datePickerState)
         }
     }
+
 
     // Time Picker Dialog
     if (showTimePicker) {
@@ -818,10 +920,16 @@ fun AddActivityDialog(
     }
 }
 
+
+
+
 // Bottom Navigation Bar Component
 @Composable
 fun BottomNavigationBar(navController: NavController) {
     val currentRoute = navController.currentBackStackEntry?.destination?.route
+
+
+
 
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -839,6 +947,9 @@ fun BottomNavigationBar(navController: NavController) {
             label = { Text("Home") }
         )
 
+
+
+
         NavigationBarItem(
             selected = currentRoute == "today",
             onClick = {
@@ -850,6 +961,9 @@ fun BottomNavigationBar(navController: NavController) {
             label = { Text("Today") }
         )
 
+
+
+
         NavigationBarItem(
             selected = currentRoute == "activities",
             onClick = {
@@ -860,6 +974,9 @@ fun BottomNavigationBar(navController: NavController) {
             icon = { Icon(Icons.Default.CheckCircle, contentDescription = "Activity Log") },
             label = { Text("Log") }
         )
+
+
+
 
         NavigationBarItem(
             selected = currentRoute == "settings",
@@ -873,3 +990,4 @@ fun BottomNavigationBar(navController: NavController) {
         )
     }
 }
+
