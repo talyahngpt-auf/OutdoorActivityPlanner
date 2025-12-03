@@ -159,19 +159,10 @@ class WeatherViewModel(
             "las piñas", "makati", "bacolod", "muntinlupa", "san jose del monte",
             "iloilo", "cagayan de oro", "marikina", "pasay", "caloocan", "malabon",
             "navotas", "san juan", "mandaluyong", "baguio", "san fernando", "laoag",
-            "dagupan", "urdaneta", "tuguegarao", "cauayan", "santiago", "ilagan",
             "angeles", "mabalacat", "san pablo", "tarlac", "olongapo", "cabanatuan",
-            "gapan", "nueva ecija", "batangas", "lipa", "tanauan", "biñan", "calamba",
-            "san pedro", "santa rosa", "cabuyao", "lucena", "naga", "legazpi",
-            "sorsogon", "masbate", "tacloban", "ormoc", "maasin", "baybay", "borongan",
-            "catbalogan", "calbayog", "roxas", "iloilo", "kalibo", "puerto princesa",
-            "tagbilaran", "dumaguete", "bais", "canlaon", "butuan", "surigao",
-            "tandag", "bislig", "cotabato", "koronadal", "tacurong", "kidapawan",
-            "malaybalay", "valencia", "oroquieta", "ozamiz", "tangub", "dipolog",
-            "dapitan", "pagadian", "isabela", "lamitan", "jolo", "bongao",
-            "bacolor", "guagua", "mexico", "apalit", "arayat", "candaba", "lubao",
-            "masantol", "minalin", "porac", "san fernando", "san luis", "san simon",
-            "santa ana", "santa rita", "santo tomas", "sasmuan"
+            "santa rosa", "bulacan", "puerto princesa", "masantol", "minalin",
+            "porac", "san fernando", "san luis", "san simon", "santa ana",
+            "santa rita", "santo tomas", "sasmuan"
         )
         return philippineCities.any { city.lowercase().contains(it) }
     }

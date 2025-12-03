@@ -1,9 +1,7 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local
 
-
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-
 
 @Entity(tableName = "activities")
 data class ActivityEntity(
@@ -14,6 +12,7 @@ data class ActivityEntity(
     val date: String = "",
     val time: String = "",
     val weatherCondition: String = "",
+    val weatherIconCode: String = "01d",
     val isCompleted: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )

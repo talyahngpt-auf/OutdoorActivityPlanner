@@ -15,27 +15,21 @@ class ActivityViewModel(
     private val repository: ActivityRepository
 ) : ViewModel() {
 
-    // All activities
     private val _activities = MutableStateFlow<List<ActivityEntity>>(emptyList())
     val activities = _activities.asStateFlow()
 
-    // Today's activities
     private val _todayActivities = MutableStateFlow<List<ActivityEntity>>(emptyList())
     val todayActivities = _todayActivities.asStateFlow()
 
-    // Pending activities
     private val _pendingActivities = MutableStateFlow<List<ActivityEntity>>(emptyList())
     val pendingActivities = _pendingActivities.asStateFlow()
 
-    // Completed activities
     private val _completedActivities = MutableStateFlow<List<ActivityEntity>>(emptyList())
     val completedActivities = _completedActivities.asStateFlow()
 
-    // Loading state
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
-    // Error message
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage = _errorMessage.asStateFlow()
 
@@ -44,13 +38,11 @@ class ActivityViewModel(
         loadTodayActivities()
     }
 
-    // Get today's date in yyyy-MM-dd format
     private fun getTodayDate(): String {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         return dateFormat.format(Date())
     }
 
-    // Load all activities
     fun loadAllActivities() {
         viewModelScope.launch {
             try {
@@ -66,7 +58,6 @@ class ActivityViewModel(
         }
     }
 
-    // Load today's activities
     fun loadTodayActivities() {
         viewModelScope.launch {
             try {
@@ -80,7 +71,6 @@ class ActivityViewModel(
         }
     }
 
-    // Load pending activities
     fun loadPendingActivities() {
         viewModelScope.launch {
             try {
@@ -93,7 +83,6 @@ class ActivityViewModel(
         }
     }
 
-    // Load completed activities
     fun loadCompletedActivities() {
         viewModelScope.launch {
             try {
@@ -106,7 +95,6 @@ class ActivityViewModel(
         }
     }
 
-    // Get activities by date
     suspend fun getActivitiesByDate(date: String): List<ActivityEntity> {
         return try {
             repository.getActivitiesByDate(date)
@@ -116,13 +104,14 @@ class ActivityViewModel(
         }
     }
 
-    // Add new activity
+    // UPDATED: Now accepts weatherIconCode parameter
     fun addActivity(
         title: String,
         description: String,
         date: String,
+        time: String,
         weatherCondition: String,
-        time: String
+        weatherIconCode: String // NEW PARAMETER
     ) {
         viewModelScope.launch {
             try {
@@ -132,14 +121,15 @@ class ActivityViewModel(
                     title = title,
                     description = description,
                     date = date,
+                    time = time,
                     weatherCondition = weatherCondition,
+                    weatherIconCode = weatherIconCode, // STORE ICON CODE
                     isCompleted = false,
                     createdAt = System.currentTimeMillis()
                 )
 
                 repository.insertActivity(activity)
 
-                // Reload activities
                 loadAllActivities()
                 loadTodayActivities()
                 loadPendingActivities()
@@ -154,7 +144,6 @@ class ActivityViewModel(
         }
     }
 
-    // Update activity
     fun updateActivity(activity: ActivityEntity) {
         viewModelScope.launch {
             try {
@@ -176,7 +165,6 @@ class ActivityViewModel(
         }
     }
 
-    // Toggle completion status
     fun toggleActivityCompletion(activity: ActivityEntity) {
         viewModelScope.launch {
             try {
@@ -194,7 +182,6 @@ class ActivityViewModel(
         }
     }
 
-    // Delete activity
     fun deleteActivity(activity: ActivityEntity) {
         viewModelScope.launch {
             try {
@@ -216,7 +203,6 @@ class ActivityViewModel(
         }
     }
 
-    // Clear error message
     fun clearError() {
         _errorMessage.value = null
     }

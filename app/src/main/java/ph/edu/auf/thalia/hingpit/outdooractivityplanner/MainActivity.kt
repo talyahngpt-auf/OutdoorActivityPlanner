@@ -1,13 +1,12 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner
 
-
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -17,51 +16,48 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.apis.factory.RetrofitFactory
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.apis.interfaces.WeatherApiService
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.auth.FirebaseAuthManager
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.AppDatabase
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.ActivityRepository
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.UserPreferencesRepository
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.WeatherRepository
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.providers.LocationProvider
-import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.ActivityPlannerScreen
-import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.ForecastScreen
-import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.HomeScreen
-import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.TodayScreen
-import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.SettingsScreen
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.sync.FirebaseSyncManager
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.*
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.theme.OutdoorActivityPlannerTheme
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.Constants
-import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.ActivityViewModel
-import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.WeatherViewModel
-
-
-
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.*
 
 class MainActivity : ComponentActivity() {
     private lateinit var database: AppDatabase
     private lateinit var weatherRepository: WeatherRepository
     private lateinit var activityRepository: ActivityRepository
+    private lateinit var userPreferencesRepository: UserPreferencesRepository
     private lateinit var locationProvider: LocationProvider
-
+    private lateinit var authManager: FirebaseAuthManager
+    private lateinit var syncManager: FirebaseSyncManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
         // Initialize Room Database
         database = AppDatabase.getDatabase(this)
-
 
         // Initialize API
         val weatherApi = RetrofitFactory.create(Constants.WEATHER_BASE_URL)
             .create(WeatherApiService::class.java)
 
-
         // Initialize Repositories
         weatherRepository = WeatherRepository(weatherApi, database.weatherCacheDao())
         activityRepository = ActivityRepository(database.activityDao())
-
+        userPreferencesRepository = UserPreferencesRepository(database.userPreferencesDao())
 
         // Initialize LocationProvider
         locationProvider = LocationProvider(this)
 
+        // Initialize Firebase managers
+        authManager = FirebaseAuthManager()
+        syncManager = FirebaseSyncManager()
 
         setContent {
             OutdoorActivityPlannerTheme {
@@ -72,7 +68,10 @@ class MainActivity : ComponentActivity() {
                     MainApp(
                         weatherRepository = weatherRepository,
                         activityRepository = activityRepository,
-                        locationProvider = locationProvider
+                        userPreferencesRepository = userPreferencesRepository,
+                        locationProvider = locationProvider,
+                        authManager = authManager,
+                        syncManager = syncManager
                     )
                 }
             }
@@ -80,33 +79,92 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
-
-
 @Composable
 fun MainApp(
     weatherRepository: WeatherRepository,
     activityRepository: ActivityRepository,
-    locationProvider: LocationProvider
+    userPreferencesRepository: UserPreferencesRepository,
+    locationProvider: LocationProvider,
+    authManager: FirebaseAuthManager,
+    syncManager: FirebaseSyncManager
 ) {
     val navController = rememberNavController()
-
 
     // Create ViewModels
     val weatherViewModel: WeatherViewModel = viewModel(
         factory = WeatherViewModelFactory(weatherRepository, locationProvider)
     )
 
-
     val activityViewModel: ActivityViewModel = viewModel(
         factory = ActivityViewModelFactory(activityRepository)
     )
 
+    val authViewModel: AuthViewModel = viewModel(
+        factory = AuthViewModelFactory(authManager, syncManager, userPreferencesRepository)
+    )
+
+    val syncViewModel: SyncViewModel = viewModel(
+        factory = SyncViewModelFactory(authManager, syncManager, activityRepository, userPreferencesRepository)
+    )
+
+    // Observe auth state to navigate
+    val authState by authViewModel.authState.collectAsState()
+    val startDestination = when (authState) {
+        is AuthState.Authenticated -> "home"
+        is AuthState.Unauthenticated -> "login"
+        else -> "login"
+    }
+
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Authenticated -> {
+                if (navController.currentDestination?.route == "login" ||
+                    navController.currentDestination?.route == "signup") {
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
+            }
+            is AuthState.Unauthenticated -> {
+                if (navController.currentDestination?.route != "login" &&
+                    navController.currentDestination?.route != "signup" &&
+                    navController.currentDestination?.route != "forgot_password") {
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            }
+            else -> {}
+        }
+    }
 
     NavHost(
         navController = navController,
-        startDestination = "home"
+        startDestination = startDestination
     ) {
+        // Auth screens
+        composable("login") {
+            LoginScreen(
+                navController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
+        composable("signup") {
+            SignUpScreen(
+                navController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
+        composable("forgot_password") {
+            ForgotPasswordScreen(
+                navController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
+        // Main app screens
         composable("home") {
             HomeScreen(
                 navController = navController,
@@ -114,7 +172,6 @@ fun MainApp(
                 activityViewModel = activityViewModel
             )
         }
-
 
         composable("today") {
             TodayScreen(
@@ -124,11 +181,12 @@ fun MainApp(
             )
         }
 
-
         composable("activities") {
-            ActivityPlannerScreen(navController)
+            ActivityLogScreen(
+                navController = navController,
+                activityViewModel = activityViewModel
+            )
         }
-
 
         composable("forecast") {
             ForecastScreen(
@@ -138,15 +196,15 @@ fun MainApp(
             )
         }
 
-
         composable("settings") {
-            SettingsScreen(navController)
+            SettingsScreen(
+                navController = navController,
+                authViewModel = authViewModel,
+                syncViewModel = syncViewModel
+            )
         }
     }
 }
-
-
-
 
 // ViewModel Factory for WeatherViewModel
 class WeatherViewModelFactory(
@@ -162,9 +220,6 @@ class WeatherViewModelFactory(
     }
 }
 
-
-
-
 // ViewModel Factory for ActivityViewModel
 class ActivityViewModelFactory(
     private val repository: ActivityRepository
@@ -178,3 +233,33 @@ class ActivityViewModelFactory(
     }
 }
 
+// ViewModel Factory for AuthViewModel
+class AuthViewModelFactory(
+    private val authManager: FirebaseAuthManager,
+    private val syncManager: FirebaseSyncManager,
+    private val userPreferencesRepository: UserPreferencesRepository
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
+            return AuthViewModel(authManager, syncManager, userPreferencesRepository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+// ViewModel Factory for SyncViewModel
+class SyncViewModelFactory(
+    private val authManager: FirebaseAuthManager,
+    private val syncManager: FirebaseSyncManager,
+    private val activityRepository: ActivityRepository,
+    private val userPreferencesRepository: UserPreferencesRepository
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(SyncViewModel::class.java)) {
+            return SyncViewModel(authManager, syncManager, activityRepository, userPreferencesRepository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
