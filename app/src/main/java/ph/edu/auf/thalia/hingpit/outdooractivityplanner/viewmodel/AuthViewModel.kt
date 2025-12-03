@@ -10,7 +10,7 @@ import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.UserPref
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.sync.FirebaseSyncManager
 
 class AuthViewModel(
-    private val authManager: FirebaseAuthManager,
+    val authManager: FirebaseAuthManager,
     private val syncManager: FirebaseSyncManager,
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
@@ -122,6 +122,97 @@ class AuthViewModel(
                     }
                 } else {
                     _errorMessage.value = result.exceptionOrNull()?.message ?: "Anonymous sign in failed"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "An error occurred"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    // ========== EMAIL LINK (PASSWORDLESS) SIGN-IN ==========
+
+    fun sendSignInLinkToEmail(email: String) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                _errorMessage.value = null
+
+                val result = authManager.sendSignInLinkToEmail(email)
+
+                if (result.isFailure) {
+                    _errorMessage.value = result.exceptionOrNull()?.message ?: "Failed to send sign-in link"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "An error occurred"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun isSignInLink(link: String): Boolean {
+        return authManager.isSignInLink(link)
+    }
+
+    fun signInWithEmailLink(email: String, link: String) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                _errorMessage.value = null
+
+                val result = authManager.signInWithEmailLink(email, link)
+
+                if (result.isSuccess) {
+                    val user = result.getOrNull()
+                    user?.let {
+                        _authState.value = AuthState.Authenticated(it)
+
+                        // Check if preferences exist, if not create default
+                        val preferences = userPreferencesRepository.getPreferences(it.uid)
+                        if (preferences == null) {
+                            userPreferencesRepository.createDefaultPreferences(it.uid)
+                        }
+                    }
+                } else {
+                    _errorMessage.value = result.exceptionOrNull()?.message ?: "Sign in with link failed"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "An error occurred"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun getSavedEmailForSignIn(): String? {
+        return authManager.getSavedEmail()
+    }
+
+    // ========== GOOGLE SIGN-IN ==========
+
+    fun signInWithGoogle(account: com.google.android.gms.auth.api.signin.GoogleSignInAccount) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                _errorMessage.value = null
+
+                val result = authManager.signInWithGoogle(account)
+
+                if (result.isSuccess) {
+                    val user = result.getOrNull()
+                    user?.let {
+                        _authState.value = AuthState.Authenticated(it)
+
+                        // Check if preferences exist, if not create default
+                        val preferences = userPreferencesRepository.getPreferences(it.uid)
+                        if (preferences == null) {
+                            userPreferencesRepository.createDefaultPreferences(it.uid)
+                        }
+                    }
+                } else {
+                    _errorMessage.value = result.exceptionOrNull()?.message ?: "Google sign in failed"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "An error occurred"

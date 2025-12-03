@@ -1,16 +1,29 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner.auth
 
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.UserProfileChangeRequest
+import android.content.Context
+import android.content.Intent
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.auth.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
-class FirebaseAuthManager {
+class FirebaseAuthManager(private val context: Context) {
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+
+    // Google Sign-In Client
+    private val googleSignInClient: GoogleSignInClient by lazy {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getWebClientId())
+            .requestEmail()
+            .build()
+        GoogleSignIn.getClient(context, gso)
+    }
 
     val currentUser: FirebaseUser?
         get() = auth.currentUser
@@ -29,6 +42,20 @@ class FirebaseAuthManager {
         auth.addAuthStateListener(authStateListener)
         awaitClose {
             auth.removeAuthStateListener(authStateListener)
+        }
+    }
+
+    // Get Web Client ID from resources
+    private fun getWebClientId(): String {
+        return try {
+            val resourceId = context.resources.getIdentifier(
+                "default_web_client_id",
+                "string",
+                context.packageName
+            )
+            context.getString(resourceId)
+        } catch (e: Exception) {
+            "479490583620-pnsa5d8n3gu5hnp6ld2b087pcl0b07ts.apps.googleusercontent.com"
         }
     }
 
@@ -76,6 +103,106 @@ class FirebaseAuthManager {
             result.user?.let {
                 Result.success(it)
             } ?: Result.failure(Exception("Anonymous sign in failed"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ========== EMAIL LINK (PASSWORDLESS) SIGN-IN ==========
+
+    // Send sign-in link to email
+    suspend fun sendSignInLinkToEmail(email: String): Result<Unit> {
+        return try {
+            val actionCodeSettings = ActionCodeSettings.newBuilder()
+                .setUrl("https://outdooractivityplanner.page.link/signin") // Your deep link
+                .setHandleCodeInApp(true)
+                .setAndroidPackageName(
+                    context.packageName,
+                    true, // Install if not available
+                    null  // Minimum version
+                )
+                .build()
+
+            auth.sendSignInLinkToEmail(email, actionCodeSettings).await()
+
+            // Save email locally to complete sign-in later
+            saveEmailForSignIn(email)
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Check if the link is a valid sign-in link
+    fun isSignInLink(link: String): Boolean {
+        return auth.isSignInWithEmailLink(link)
+    }
+
+    // Complete sign-in with email link
+    suspend fun signInWithEmailLink(email: String, link: String): Result<FirebaseUser> {
+        return try {
+            val result = auth.signInWithEmailLink(email, link).await()
+
+            // Clear saved email
+            clearSavedEmail()
+
+            result.user?.let {
+                Result.success(it)
+            } ?: Result.failure(Exception("Sign in with email link failed"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Save email for sign-in completion
+    private fun saveEmailForSignIn(email: String) {
+        context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .putString("pending_email", email)
+            .apply()
+    }
+
+    // Get saved email
+    fun getSavedEmail(): String? {
+        return context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+            .getString("pending_email", null)
+    }
+
+    // Clear saved email
+    private fun clearSavedEmail() {
+        context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .remove("pending_email")
+            .apply()
+    }
+
+    // ========== GOOGLE SIGN-IN ==========
+
+    // Get Google Sign-In Intent
+    fun getGoogleSignInIntent(): Intent {
+        return googleSignInClient.signInIntent
+    }
+
+    // Sign in with Google credential
+    suspend fun signInWithGoogle(account: GoogleSignInAccount): Result<FirebaseUser> {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+            val result = auth.signInWithCredential(credential).await()
+
+            result.user?.let {
+                Result.success(it)
+            } ?: Result.failure(Exception("Google sign in failed"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Sign out from Google
+    suspend fun signOutGoogle(): Result<Unit> {
+        return try {
+            googleSignInClient.signOut().await()
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }

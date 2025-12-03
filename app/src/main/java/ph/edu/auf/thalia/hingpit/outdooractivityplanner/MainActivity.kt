@@ -1,5 +1,7 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -56,8 +58,11 @@ class MainActivity : ComponentActivity() {
         locationProvider = LocationProvider(this)
 
         // Initialize Firebase managers
-        authManager = FirebaseAuthManager()
+        authManager = FirebaseAuthManager(this)
         syncManager = FirebaseSyncManager()
+
+        // Handle email link sign-in
+        handleEmailLinkSignIn(intent)
 
         setContent {
             OutdoorActivityPlannerTheme {
@@ -74,6 +79,23 @@ class MainActivity : ComponentActivity() {
                         syncManager = syncManager
                     )
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleEmailLinkSignIn(intent)
+    }
+
+    private fun handleEmailLinkSignIn(intent: Intent?) {
+        val emailLink = intent?.data?.toString()
+        if (emailLink != null && authManager.isSignInLink(emailLink)) {
+            // Get the email from SharedPreferences or ask user
+            val email = authManager.getSavedEmail()
+            if (email != null) {
+                // Complete sign-in in background
+                // This will be handled by AuthViewModel
             }
         }
     }
@@ -159,6 +181,13 @@ fun MainApp(
 
         composable("forgot_password") {
             ForgotPasswordScreen(
+                navController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
+        composable("email_link_signin") {
+            EmailLinkSignInScreen(
                 navController = navController,
                 authViewModel = authViewModel
             )

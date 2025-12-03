@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -16,6 +17,11 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.AuthViewModel
 
 @Composable
@@ -23,12 +29,28 @@ fun LoginScreen(
     navController: NavController,
     authViewModel: AuthViewModel
 ) {
+    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     val isLoading by authViewModel.isLoading.collectAsState()
     val errorMessage by authViewModel.errorMessage.collectAsState()
+
+    // Google Sign-In launcher
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                authViewModel.signInWithGoogle(account)
+            } catch (e: ApiException) {
+                // Handle error
+            }
+        }
+    }
 
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
@@ -166,6 +188,33 @@ fun LoginScreen(
                 }
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                // Google Sign In
+                OutlinedButton(
+                    onClick = {
+                        val signInIntent = authViewModel.authManager.getGoogleSignInIntent()
+                        googleSignInLauncher.launch(signInIntent)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading
+                ) {
+                    Text("🔵", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Continue with Google")
+                }
+
+                // Email Link Sign In
+                OutlinedButton(
+                    onClick = {
+                        navController.navigate("email_link_signin")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading
+                ) {
+                    Text("🔗", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Sign In with Email Link")
+                }
 
                 // Continue as Guest
                 OutlinedButton(
