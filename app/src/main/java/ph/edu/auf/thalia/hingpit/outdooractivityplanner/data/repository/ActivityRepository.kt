@@ -46,9 +46,4 @@ class ActivityRepository(private val activityDao: ActivityDao) {
     suspend fun getCompletedActivities(): List<ActivityEntity> {
         return activityDao.getCompletedActivities()
     }
-
-
-    suspend fun deleteAllActivities() {
-        activityDao.deleteAllActivities()
-    }
 }

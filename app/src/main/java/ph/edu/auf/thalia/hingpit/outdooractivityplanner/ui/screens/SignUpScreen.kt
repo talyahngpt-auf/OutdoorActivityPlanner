@@ -73,7 +73,7 @@ fun SignUpScreen(
                 )
 
                 Text(
-                    text = "Join Outdoor Activity Planner",
+                    text = "Join W.A.R.M",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center

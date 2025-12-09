@@ -39,8 +39,4 @@ interface ActivityDao {
 
     @Query("SELECT * FROM activities WHERE isCompleted = 1 ORDER BY createdAt DESC")
     suspend fun getCompletedActivities(): List<ActivityEntity>
-
-
-    @Query("DELETE FROM activities")
-    suspend fun deleteAllActivities()
 }

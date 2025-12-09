@@ -53,9 +53,40 @@ fun ActivityCard(
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                 )
 
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // First row: time and location only
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    activity.timeOfDay?.let {
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                            shape = MaterialTheme.shapes.small
+                        ) {
+                            Text(
+                                text = it.replaceFirstChar { c -> c.uppercase() },
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+
+                    activity.location?.let {
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f),
+                            shape = MaterialTheme.shapes.small
+                        ) {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Second row: category only
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Category chip
                 Surface(
                     color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f),
                     shape = MaterialTheme.shapes.small

@@ -59,6 +59,8 @@ class FirebaseAuthManager(private val context: Context) {
         }
     }
 
+    // ========== EMAIL/PASSWORD AUTHENTICATION ==========
+
     // Sign up with email and password
     suspend fun signUpWithEmail(
         email: String,
@@ -108,75 +110,6 @@ class FirebaseAuthManager(private val context: Context) {
         }
     }
 
-    // ========== EMAIL LINK (PASSWORDLESS) SIGN-IN ==========
-
-    // Send sign-in link to email
-    suspend fun sendSignInLinkToEmail(email: String): Result<Unit> {
-        return try {
-            val actionCodeSettings = ActionCodeSettings.newBuilder()
-                .setUrl("https://outdooractivityplanner.page.link/signin") // Your deep link
-                .setHandleCodeInApp(true)
-                .setAndroidPackageName(
-                    context.packageName,
-                    true, // Install if not available
-                    null  // Minimum version
-                )
-                .build()
-
-            auth.sendSignInLinkToEmail(email, actionCodeSettings).await()
-
-            // Save email locally to complete sign-in later
-            saveEmailForSignIn(email)
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    // Check if the link is a valid sign-in link
-    fun isSignInLink(link: String): Boolean {
-        return auth.isSignInWithEmailLink(link)
-    }
-
-    // Complete sign-in with email link
-    suspend fun signInWithEmailLink(email: String, link: String): Result<FirebaseUser> {
-        return try {
-            val result = auth.signInWithEmailLink(email, link).await()
-
-            // Clear saved email
-            clearSavedEmail()
-
-            result.user?.let {
-                Result.success(it)
-            } ?: Result.failure(Exception("Sign in with email link failed"))
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    // Save email for sign-in completion
-    private fun saveEmailForSignIn(email: String) {
-        context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
-            .edit()
-            .putString("pending_email", email)
-            .apply()
-    }
-
-    // Get saved email
-    fun getSavedEmail(): String? {
-        return context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
-            .getString("pending_email", null)
-    }
-
-    // Clear saved email
-    private fun clearSavedEmail() {
-        context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
-            .edit()
-            .remove("pending_email")
-            .apply()
-    }
-
     // ========== GOOGLE SIGN-IN ==========
 
     // Get Google Sign-In Intent
@@ -198,6 +131,41 @@ class FirebaseAuthManager(private val context: Context) {
         }
     }
 
+    // Link Google account to existing user
+    suspend fun linkGoogleAccount(account: GoogleSignInAccount): Result<FirebaseUser> {
+        return try {
+            val user = auth.currentUser ?: return Result.failure(Exception("No user signed in"))
+            val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+            val result = user.linkWithCredential(credential).await()
+
+            result.user?.let {
+                Result.success(it)
+            } ?: Result.failure(Exception("Failed to link Google account"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Unlink Google account
+    suspend fun unlinkGoogleAccount(): Result<FirebaseUser> {
+        return try {
+            val user = auth.currentUser ?: return Result.failure(Exception("No user signed in"))
+            val result = user.unlink(GoogleAuthProvider.PROVIDER_ID).await()
+
+            result.user?.let {
+                Result.success(it)
+            } ?: Result.failure(Exception("Failed to unlink Google account"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Check if Google account is linked
+    fun isGoogleLinked(): Boolean {
+        val user = auth.currentUser ?: return false
+        return user.providerData.any { it.providerId == GoogleAuthProvider.PROVIDER_ID }
+    }
+
     // Sign out from Google
     suspend fun signOutGoogle(): Result<Unit> {
         return try {
@@ -208,9 +176,61 @@ class FirebaseAuthManager(private val context: Context) {
         }
     }
 
-    // Sign out
-    fun signOut() {
-        auth.signOut()
+    // ========== PASSWORD MANAGEMENT ==========
+
+    // Check if user has password (email/password provider)
+    fun hasPassword(): Boolean {
+        val user = auth.currentUser ?: return false
+        return user.providerData.any { it.providerId == EmailAuthProvider.PROVIDER_ID }
+    }
+
+    // Change password (requires recent authentication)
+    suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> {
+        return try {
+            val user = auth.currentUser ?: return Result.failure(Exception("No user signed in"))
+            val email = user.email ?: return Result.failure(Exception("No email associated with account"))
+
+            // Re-authenticate with current password
+            val credential = EmailAuthProvider.getCredential(email, currentPassword)
+            user.reauthenticate(credential).await()
+
+            // Update password
+            user.updatePassword(newPassword).await()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Add password to Google account (link email/password provider)
+    suspend fun addPassword(password: String): Result<Unit> {
+        return try {
+            val user = auth.currentUser ?: return Result.failure(Exception("No user signed in"))
+            val email = user.email ?: return Result.failure(Exception("No email associated with account"))
+
+            // Create email/password credential
+            val credential = EmailAuthProvider.getCredential(email, password)
+
+            // Link credential to user
+            user.linkWithCredential(credential).await()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Re-authenticate with Google (needed before sensitive operations)
+    suspend fun reauthenticateWithGoogle(account: GoogleSignInAccount): Result<Unit> {
+        return try {
+            val user = auth.currentUser ?: return Result.failure(Exception("No user signed in"))
+            val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+            user.reauthenticate(credential).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     // Send password reset email
@@ -223,6 +243,8 @@ class FirebaseAuthManager(private val context: Context) {
         }
     }
 
+    // ========== USER PROFILE ==========
+
     // Update user profile
     suspend fun updateUserProfile(displayName: String? = null): Result<Unit> {
         return try {
@@ -233,17 +255,6 @@ class FirebaseAuthManager(private val context: Context) {
                 }
                 .build()
             user.updateProfile(profileUpdates).await()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    // Delete user account
-    suspend fun deleteAccount(): Result<Unit> {
-        return try {
-            val user = auth.currentUser ?: return Result.failure(Exception("No user signed in"))
-            user.delete().await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -270,6 +281,30 @@ class FirebaseAuthManager(private val context: Context) {
         return try {
             val user = auth.currentUser ?: return Result.failure(Exception("No user signed in"))
             user.sendEmailVerification().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Get provider info (Email, Google, Anonymous, etc.)
+    fun getProviderInfo(): List<String> {
+        val user = auth.currentUser ?: return emptyList()
+        return user.providerData.map { it.providerId }
+    }
+
+    // ========== ACCOUNT MANAGEMENT ==========
+
+    // Sign out
+    fun signOut() {
+        auth.signOut()
+    }
+
+    // Delete user account
+    suspend fun deleteAccount(): Result<Unit> {
+        return try {
+            val user = auth.currentUser ?: return Result.failure(Exception("No user signed in"))
+            user.delete().await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

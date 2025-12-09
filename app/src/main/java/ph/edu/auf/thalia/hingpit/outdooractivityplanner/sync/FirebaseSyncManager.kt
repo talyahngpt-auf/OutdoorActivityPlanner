@@ -1,14 +1,18 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner.sync
 
+
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.ActivityEntity
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.UserPreferences
 
+
 class FirebaseSyncManager {
 
+
     private val firestore = FirebaseFirestore.getInstance()
+
 
     companion object {
         private const val USERS_COLLECTION = "users"
@@ -16,11 +20,14 @@ class FirebaseSyncManager {
         private const val PREFERENCES_COLLECTION = "preferences"
     }
 
+
     // ========== ACTIVITIES SYNC ==========
+
 
     suspend fun syncActivitiesToCloud(userId: String, activities: List<ActivityEntity>): Result<Unit> {
         return try {
             val batch = firestore.batch()
+
 
             activities.forEach { activity ->
                 val docRef = firestore
@@ -28,6 +35,7 @@ class FirebaseSyncManager {
                     .document(userId)
                     .collection(ACTIVITIES_COLLECTION)
                     .document(activity.id.toString())
+
 
                 val activityMap = mapOf(
                     "id" to activity.id,
@@ -38,12 +46,16 @@ class FirebaseSyncManager {
                     "weatherCondition" to activity.weatherCondition,
                     "weatherIconCode" to activity.weatherIconCode,
                     "isCompleted" to activity.isCompleted,
+                    "locationType" to activity.locationType,
+                    "category" to activity.category,
                     "createdAt" to activity.createdAt,
                     "updatedAt" to System.currentTimeMillis()
                 )
 
+
                 batch.set(docRef, activityMap, SetOptions.merge())
             }
+
 
             batch.commit().await()
             Result.success(Unit)
@@ -51,6 +63,7 @@ class FirebaseSyncManager {
             Result.failure(e)
         }
     }
+
 
     suspend fun syncActivitiesFromCloud(userId: String): Result<List<ActivityEntity>> {
         return try {
@@ -60,6 +73,7 @@ class FirebaseSyncManager {
                 .collection(ACTIVITIES_COLLECTION)
                 .get()
                 .await()
+
 
             val activities = snapshot.documents.mapNotNull { doc ->
                 try {
@@ -72,18 +86,22 @@ class FirebaseSyncManager {
                         weatherCondition = doc.getString("weatherCondition") ?: "",
                         weatherIconCode = doc.getString("weatherIconCode") ?: "01d",
                         isCompleted = doc.getBoolean("isCompleted") ?: false,
-                        createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
+                        createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis(),
+                        locationType = doc.getString("locationType") ?: "",
+                        category = doc.getString("category") ?: ""
                     )
                 } catch (e: Exception) {
                     null
                 }
             }
 
+
             Result.success(activities)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
+
 
     suspend fun deleteActivityFromCloud(userId: String, activityId: Int): Result<Unit> {
         return try {
@@ -100,7 +118,9 @@ class FirebaseSyncManager {
         }
     }
 
+
     // ========== PREFERENCES SYNC ==========
+
 
     suspend fun syncPreferencesToCloud(userId: String, preferences: UserPreferences): Result<Unit> {
         return try {
@@ -116,6 +136,7 @@ class FirebaseSyncManager {
                 "updatedAt" to System.currentTimeMillis()
             )
 
+
             firestore
                 .collection(USERS_COLLECTION)
                 .document(userId)
@@ -124,11 +145,13 @@ class FirebaseSyncManager {
                 .set(preferencesMap, SetOptions.merge())
                 .await()
 
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
+
 
     suspend fun syncPreferencesFromCloud(userId: String): Result<UserPreferences?> {
         return try {
@@ -139,6 +162,7 @@ class FirebaseSyncManager {
                 .document("user_preferences")
                 .get()
                 .await()
+
 
             if (snapshot.exists()) {
                 val preferences = UserPreferences(
@@ -161,7 +185,9 @@ class FirebaseSyncManager {
         }
     }
 
+
     // ========== FULL SYNC ==========
+
 
     suspend fun performFullSync(
         userId: String,
@@ -172,14 +198,17 @@ class FirebaseSyncManager {
             // Sync activities to cloud
             syncActivitiesToCloud(userId, localActivities)
 
+
             // Sync preferences to cloud
             localPreferences?.let {
                 syncPreferencesToCloud(userId, it)
             }
 
+
             // Fetch from cloud
             val cloudActivities = syncActivitiesFromCloud(userId).getOrNull() ?: emptyList()
             val cloudPreferences = syncPreferencesFromCloud(userId).getOrNull()
+
 
             Result.success(
                 SyncResult(
@@ -193,7 +222,9 @@ class FirebaseSyncManager {
         }
     }
 
+
     // ========== DELETE USER DATA ==========
+
 
     suspend fun deleteAllUserData(userId: String): Result<Unit> {
         return try {
@@ -205,10 +236,12 @@ class FirebaseSyncManager {
                 .get()
                 .await()
 
+
             val batch = firestore.batch()
             activitiesSnapshot.documents.forEach { doc ->
                 batch.delete(doc.reference)
             }
+
 
             // Delete preferences
             val preferencesRef = firestore
@@ -218,6 +251,7 @@ class FirebaseSyncManager {
                 .document("user_preferences")
             batch.delete(preferencesRef)
 
+
             batch.commit().await()
             Result.success(Unit)
         } catch (e: Exception) {
@@ -226,8 +260,11 @@ class FirebaseSyncManager {
     }
 }
 
+
 data class SyncResult(
     val activitiesSynced: Int,
     val preferencesSynced: Boolean,
     val timestamp: Long
 )
+
+

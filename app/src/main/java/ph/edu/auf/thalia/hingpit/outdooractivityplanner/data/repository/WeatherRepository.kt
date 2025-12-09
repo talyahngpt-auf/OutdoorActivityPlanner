@@ -4,7 +4,6 @@ import ph.edu.auf.thalia.hingpit.outdooractivityplanner.apis.interfaces.WeatherA
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.WeatherCache
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.dao.WeatherCacheDao
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.CurrentWeatherResponse
-import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.ForecastResponse
 
 class WeatherRepository(
     private val api: WeatherApiService,

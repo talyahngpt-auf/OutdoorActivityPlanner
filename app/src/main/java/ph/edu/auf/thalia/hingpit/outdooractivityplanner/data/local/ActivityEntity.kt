@@ -14,5 +14,7 @@ data class ActivityEntity(
     val weatherCondition: String = "",
     val weatherIconCode: String = "01d",
     val isCompleted: Boolean = false,
+    val locationType: String = "Indoor",
+    val category: String = "General",
     val createdAt: Long = System.currentTimeMillis()
 )

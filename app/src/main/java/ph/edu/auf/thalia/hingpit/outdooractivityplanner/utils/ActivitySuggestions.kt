@@ -1,158 +1,741 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils
 
-import java.util.Calendar
+enum class WeatherCondition {
+    CLEAR, CLOUDS, RAIN, DRIZZLE, THUNDERSTORM,
+    MIST, FOG, HAZE, SMOKE;
 
+    companion object {
+        fun fromString(condition: String): WeatherCondition {
+            return values().find {
+                it.name.equals(condition, ignoreCase = true)
+            } ?: CLEAR
+        }
+    }
+}
+
+enum class TempCategory(val range: String, val description: String) {
+    COOL("≤23°C", "Cool and comfortable"),
+    COMFORTABLE("24-28°C", "Pleasant temperature"),
+    WARM("29-31°C", "Warm but manageable"),
+    HOT("32-35°C", "Hot, seek shade and hydration"),
+    SCORCHING(">35°C", "Extreme heat, stay indoors if possible");
+
+    companion object {
+        fun fromTemp(celsius: Double): TempCategory {
+            return when {
+                celsius <= 23.0 -> COOL
+                celsius <= 28.0 -> COMFORTABLE
+                celsius <= 31.0 -> WARM
+                celsius <= 35.0 -> HOT
+                else -> SCORCHING
+            }
+        }
+    }
+}
+
+enum class TimeOfDay(val label: String, val hourRange: IntRange) {
+    MIDNIGHT("🌃 Midnight", 0..4),
+    MORNING("🌅 Morning", 5..11),
+    NOON("☀️ Noon", 12..12),
+    AFTERNOON("☀️ Afternoon", 13..17),
+    EVENING("🌆 Evening", 18..23),
+    ANYTIME("Anytime", 0..23);
+
+    companion object {
+        fun fromHour(hour: Int): TimeOfDay {
+            return values().find { hour in it.hourRange } ?: ANYTIME
+        }
+
+        fun getCurrentTimeOfDay(): TimeOfDay {
+            val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+            return fromHour(hour)
+        }
+    }
+}
+
+enum class WeatherSuitability(val score: Int) {
+    PERFECT(4),
+    GOOD(3),
+    ACCEPTABLE(2),
+    AVOID(0);
+}
+
+enum class LocationType {
+    INDOOR,
+    OUTDOOR,
+    FLEXIBLE;
+
+    fun matches(required: LocationType): Boolean {
+        return this == required || this == FLEXIBLE || required == FLEXIBLE
+    }
+
+    fun toDisplayString(): String {
+        return when (this) {
+            INDOOR -> "Indoor"
+            OUTDOOR -> "Outdoor"
+            FLEXIBLE -> "Outdoor and Indoor"
+        }
+    }
+}
+
+enum class IntensityLevel {
+    LIGHT,
+    MODERATE,
+    HEAVY;
+}
+
+
+enum class ActivityCategory {
+    FOOD, FITNESS, LEISURE, CULTURAL, SHOPPING,
+    NATURE, SOCIAL, WELLNESS, ENTERTAINMENT, EDUCATIONAL,
+    FAMILY;
+
+    fun toDisplayString(): String {
+        return name.lowercase().replaceFirstChar { it.uppercase() }
+    }
+}
+
+// ============================================================
+// PRE-DEFINED WEATHER SUITABILITY MAPS
+// ============================================================
+
+val OUTDOOR_CLEAR = mapOf(
+    WeatherCondition.CLEAR to WeatherSuitability.PERFECT,
+    WeatherCondition.CLOUDS to WeatherSuitability.PERFECT,
+    WeatherCondition.MIST to WeatherSuitability.GOOD,
+    WeatherCondition.FOG to WeatherSuitability.GOOD,
+    WeatherCondition.HAZE to WeatherSuitability.ACCEPTABLE,
+    WeatherCondition.DRIZZLE to WeatherSuitability.ACCEPTABLE,
+    WeatherCondition.RAIN to WeatherSuitability.AVOID,
+    WeatherCondition.THUNDERSTORM to WeatherSuitability.AVOID
+)
+
+val INDOOR_ANY = mapOf(
+    WeatherCondition.CLEAR to WeatherSuitability.GOOD,
+    WeatherCondition.CLOUDS to WeatherSuitability.GOOD,
+    WeatherCondition.MIST to WeatherSuitability.GOOD,
+    WeatherCondition.FOG to WeatherSuitability.GOOD,
+    WeatherCondition.HAZE to WeatherSuitability.GOOD,
+    WeatherCondition.DRIZZLE to WeatherSuitability.PERFECT,
+    WeatherCondition.RAIN to WeatherSuitability.PERFECT,
+    WeatherCondition.THUNDERSTORM to WeatherSuitability.PERFECT
+)
+
+val WATER_ACTIVITY = mapOf(
+    WeatherCondition.CLEAR to WeatherSuitability.PERFECT,
+    WeatherCondition.CLOUDS to WeatherSuitability.PERFECT,
+    WeatherCondition.DRIZZLE to WeatherSuitability.GOOD,
+    WeatherCondition.RAIN to WeatherSuitability.ACCEPTABLE,
+    WeatherCondition.THUNDERSTORM to WeatherSuitability.AVOID
+)
+
+val COVERED_OUTDOOR = mapOf(
+    WeatherCondition.CLEAR to WeatherSuitability.PERFECT,
+    WeatherCondition.CLOUDS to WeatherSuitability.PERFECT,
+    WeatherCondition.MIST to WeatherSuitability.GOOD,
+    WeatherCondition.DRIZZLE to WeatherSuitability.GOOD,
+    WeatherCondition.RAIN to WeatherSuitability.ACCEPTABLE,
+    WeatherCondition.THUNDERSTORM to WeatherSuitability.AVOID
+)
+
+// ============================================================
+// ENHANCED ACTIVITY DATA CLASS
+// ============================================================
+
+data class Activity(
+    val title: String,
+    val description: String,
+    val icon: String,
+    val weatherSuitability: Map<WeatherCondition, WeatherSuitability>,
+    val tempCategories: List<TempCategory>,
+    val timesOfDay: List<TimeOfDay>,
+    val locationType: LocationType,
+    val intensity: IntensityLevel,
+    val category: ActivityCategory
+) {
+    fun isSuitableFor(
+        weather: WeatherCondition,
+        acceptableLevels: List<WeatherSuitability> = listOf(
+            WeatherSuitability.PERFECT,
+            WeatherSuitability.GOOD
+        )
+    ): Boolean {
+        val suitability = weatherSuitability[weather] ?: return false
+        return suitability in acceptableLevels
+    }
+
+    fun getSuitability(weather: WeatherCondition): WeatherSuitability? {
+        return weatherSuitability[weather]
+    }
+
+    fun getScore(weather: WeatherCondition): Int {
+        return getSuitability(weather)?.score ?: 0
+    }
+}
+
+fun createActivity(
+    title: String,
+    description: String,
+    icon: String,
+    weather: Map<WeatherCondition, WeatherSuitability>,
+    temps: List<TempCategory>,
+    times: List<TimeOfDay>,
+    location: LocationType,
+    intensity: IntensityLevel,
+    category: ActivityCategory
+) = Activity(title, description, icon, weather, temps, times, location, intensity, category)
+
+// ============================================================
+// ACTIVITY MASTER LIST
+// ============================================================
+
+object ActivityMasterList {
+
+    val activities = buildList {
+        // CLEAR WEATHER ACTIVITIES
+        add(createActivity(
+            title = "Early Morning Jog",
+            description = "Perfect cool weather for running around the village",
+            icon = "🏃",
+            weather = OUTDOOR_CLEAR,
+            temps = listOf(TempCategory.COOL, TempCategory.COMFORTABLE),
+            times = listOf(TimeOfDay.MORNING),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.MODERATE,
+            category = ActivityCategory.FITNESS
+        ))
+
+        add(createActivity(
+            title = "Morning Coffee at Café",
+            description = "Hot drinks in cozy atmosphere",
+            icon = "☕",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COOL, TempCategory.COMFORTABLE),
+            times = listOf(TimeOfDay.MORNING, TimeOfDay.AFTERNOON),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.FOOD
+        ))
+
+        add(createActivity(
+            title = "Park Stroll",
+            description = "Relaxing walk in cool breeze",
+            icon = "🌳",
+            weather = OUTDOOR_CLEAR,
+            temps = listOf(TempCategory.COOL, TempCategory.COMFORTABLE),
+            times = listOf(TimeOfDay.MORNING, TimeOfDay.AFTERNOON, TimeOfDay.EVENING),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.NATURE
+        ))
+
+        add(createActivity(
+            title = "Buy Taho",
+            description = "Catch the taho vendor for warm sweet snack",
+            icon = "🥛",
+            weather = OUTDOOR_CLEAR,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM, TempCategory.COOL),
+            times = listOf(TimeOfDay.MORNING),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.FOOD
+        ))
+
+        add(createActivity(
+            title = "Palengke Run",
+            description = "Visit the local market for fresh ingredients",
+            icon = "🛒",
+            weather = COVERED_OUTDOOR,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.MORNING),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.SHOPPING
+        ))
+
+        add(createActivity(
+            title = "Bike Around the Barangay",
+            description = "Cycle through quiet village streets",
+            icon = "🚴",
+            weather = OUTDOOR_CLEAR,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.MORNING, TimeOfDay.AFTERNOON, TimeOfDay.EVENING),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.MODERATE,
+            category = ActivityCategory.FITNESS
+        ))
+
+        add(createActivity(
+            title = "Basketball at the Court",
+            description = "Play hoops at the barangay covered court",
+            icon = "🏀",
+            weather = COVERED_OUTDOOR,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.AFTERNOON, TimeOfDay.EVENING),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.HEAVY,
+            category = ActivityCategory.FITNESS
+        ))
+
+        add(createActivity(
+            title = "Ukay-Ukay Shopping",
+            description = "Hunt for bargain clothes at thrift shops",
+            icon = "👕",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.WARM, TempCategory.HOT, TempCategory.COMFORTABLE),
+            times = listOf(TimeOfDay.AFTERNOON, TimeOfDay.EVENING),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.SHOPPING
+        ))
+
+        add(createActivity(
+            title = "Karinderya Food Trip",
+            description = "Try affordable home-cooked meals",
+            icon = "🍜",
+            weather = COVERED_OUTDOOR,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM, TempCategory.HOT),
+            times = listOf(TimeOfDay.NOON, TimeOfDay.AFTERNOON, TimeOfDay.EVENING),
+            location = LocationType.FLEXIBLE,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.FOOD
+        ))
+
+        add(createActivity(
+            title = "Halo-Halo Break",
+            description = "Cool down with Philippines' iconic dessert",
+            icon = "🍧",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.HOT, TempCategory.SCORCHING),
+            times = listOf(TimeOfDay.AFTERNOON, TimeOfDay.EVENING),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.FOOD
+        ))
+
+        add(createActivity(
+            title = "Mall Strolling",
+            description = "Escape the heat and window shop",
+            icon = "🛍️",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.HOT, TempCategory.SCORCHING),
+            times = listOf(TimeOfDay.AFTERNOON, TimeOfDay.EVENING),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.SHOPPING
+        ))
+
+        add(createActivity(
+            title = "Swimming at Resort",
+            description = "Cool off at local swimming pool",
+            icon = "🏊",
+            weather = WATER_ACTIVITY,
+            temps = listOf(TempCategory.HOT, TempCategory.SCORCHING),
+            times = listOf(TimeOfDay.MORNING, TimeOfDay.AFTERNOON),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.MODERATE,
+            category = ActivityCategory.FITNESS
+        ))
+
+        add(createActivity(
+            title = "Dirty Ice Cream",
+            description = "Buy sorbetes from the street vendor",
+            icon = "🍦",
+            weather = OUTDOOR_CLEAR,
+            temps = listOf(TempCategory.HOT, TempCategory.SCORCHING),
+            times = listOf(TimeOfDay.AFTERNOON, TimeOfDay.EVENING),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.FOOD
+        ))
+
+        // RAINY WEATHER ACTIVITIES
+        add(createActivity(
+            title = "Movie Marathon at Home",
+            description = "Binge-watch shows while it rains",
+            icon = "🎬",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COOL, TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.ANYTIME),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.ENTERTAINMENT
+        ))
+
+        add(createActivity(
+            title = "Lugaw/Goto Break",
+            description = "Hot rice porridge perfect for rainy weather",
+            icon = "🍲",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COOL, TempCategory.COMFORTABLE),
+            times = listOf(TimeOfDay.MORNING, TimeOfDay.EVENING),
+            location = LocationType.FLEXIBLE,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.FOOD
+        ))
+
+        add(createActivity(
+            title = "Home Workout",
+            description = "Bodyweight exercises indoors",
+            icon = "💪",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.ANYTIME),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.MODERATE,
+            category = ActivityCategory.FITNESS
+        ))
+
+        add(createActivity(
+            title = "Cozy Café Time",
+            description = "Warm drinks watching the rain",
+            icon = "☕",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COOL, TempCategory.COMFORTABLE),
+            times = listOf(TimeOfDay.AFTERNOON, TimeOfDay.EVENING),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.FOOD
+        ))
+
+        add(createActivity(
+            title = "Indoor Badminton",
+            description = "Play at covered court despite rain",
+            icon = "🏸",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.AFTERNOON, TimeOfDay.EVENING),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.MODERATE,
+            category = ActivityCategory.FITNESS
+        ))
+
+        add(createActivity(
+            title = "Tambay sa Tindahan",
+            description = "Chill at the sari-sari store",
+            icon = "🏪",
+            weather = COVERED_OUTDOOR,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.EVENING, TimeOfDay.MIDNIGHT),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.SOCIAL
+        ))
+
+        add(createActivity(
+            title = "Videoke/Karaoke",
+            description = "Sing your heart out with friends",
+            icon = "🎤",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM, TempCategory.HOT),
+            times = listOf(TimeOfDay.EVENING),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.ENTERTAINMENT
+        ))
+
+        add(createActivity(
+            title = "Night Market Walk",
+            description = "Browse tiangge stalls",
+            icon = "🌃",
+            weather = OUTDOOR_CLEAR,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.EVENING),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.SHOPPING
+        ))
+
+        add(createActivity(
+            title = "Midnight Mami Run",
+            description = "Late-night noodle soup adventure",
+            icon = "🍜",
+            weather = OUTDOOR_CLEAR,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.COOL),
+            times = listOf(TimeOfDay.MIDNIGHT, TimeOfDay.EVENING),
+            location = LocationType.FLEXIBLE,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.FOOD
+        ))
+
+        // ANYTIME ACTIVITIES
+        add(createActivity(
+            title = "Reading",
+            description = "Books, comics, or online articles",
+            icon = "📖",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COOL, TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.ANYTIME),
+            location = LocationType.FLEXIBLE,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.EDUCATIONAL
+        ))
+
+        add(createActivity(
+            title = "Mobile Gaming",
+            description = "Mobile Legends, COD Mobile, or other games",
+            icon = "🎮",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM, TempCategory.HOT),
+            times = listOf(TimeOfDay.ANYTIME),
+            location = LocationType.FLEXIBLE,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.ENTERTAINMENT
+        ))
+
+        add(createActivity(
+            title = "Picnic at the Park",
+            description = "Enjoy homemade snacks outdoors in a relaxing setting",
+            icon = "🧺",
+            weather = OUTDOOR_CLEAR,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.MORNING, TimeOfDay.AFTERNOON),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.LEISURE
+        ))
+
+        add(createActivity(
+            title = "Sketch or Draw",
+            description = "Bring a sketchbook and enjoy some creative time",
+            icon = "✏️",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COOL, TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.ANYTIME),
+            location = LocationType.FLEXIBLE,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.EDUCATIONAL
+        ))
+
+        add(createActivity(
+            title = "Game Night with Friends and Family",
+            description = "Play card games or console games at home",
+            icon = "🎲",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM, TempCategory.HOT),
+            times = listOf(TimeOfDay.EVENING, TimeOfDay.MIDNIGHT),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.SOCIAL
+        ))
+
+        add(createActivity(
+            title = "Cook or Bake at Home",
+            description = "Try new recipes and enjoy homemade food",
+            icon = "🍳",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COOL, TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.MORNING, TimeOfDay.AFTERNOON),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.MODERATE,
+            category = ActivityCategory.FOOD
+        ))
+
+        add(createActivity(
+            title = "Art Workshop",
+            description = "Attend a class to learn painting or crafts",
+            icon = "🎨",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COOL, TempCategory.COMFORTABLE),
+            times = listOf(TimeOfDay.AFTERNOON),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.CULTURAL
+        ))
+
+        add(createActivity(
+            title = "Play Board Games with Family",
+            description = "Bond over classic board games or puzzles",
+            icon = "♟️",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COOL, TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.ANYTIME),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.FAMILY
+        ))
+
+        add(createActivity(
+            title = "Grocery Shopping",
+            description = "Stock up on essentials at the local store",
+            icon = "🛒",
+            weather = COVERED_OUTDOOR,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.MORNING, TimeOfDay.AFTERNOON),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.SHOPPING
+        ))
+
+        add(createActivity(
+            title = "Hike a Nearby Trail",
+            description = "Enjoy nature and get a good workout on local trails",
+            icon = "🥾",
+            weather = OUTDOOR_CLEAR,
+            temps = listOf(TempCategory.COOL, TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.MORNING, TimeOfDay.AFTERNOON),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.HEAVY,
+            category = ActivityCategory.NATURE
+        ))
+
+        add(createActivity(
+            title = "Swimming",
+            description = "Cool off under the sun",
+            icon = "🏖️",
+            weather = WATER_ACTIVITY,
+            temps = listOf(TempCategory.HOT, TempCategory.SCORCHING),
+            times = listOf(TimeOfDay.MORNING, TimeOfDay.AFTERNOON),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.MODERATE,
+            category = ActivityCategory.FITNESS
+        ))
+
+        add(createActivity(
+            title = "Evening Walk in the Park",
+            description = "Relaxing stroll to enjoy sunset",
+            icon = "🌇",
+            weather = OUTDOOR_CLEAR,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.EVENING),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.LEISURE
+        ))
+
+        add(createActivity(
+            title = "Gardening",
+            description = "Plant flowers or vegetables at home or community garden",
+            icon = "🌱",
+            weather = OUTDOOR_CLEAR,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.MORNING, TimeOfDay.AFTERNOON),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.MODERATE,
+            category = ActivityCategory.NATURE
+        ))
+
+        add(createActivity(
+            title = "Neighborhood Volleyball",
+            description = "Friendly volleyball game with neighbors",
+            icon = "🏐",
+            weather = COVERED_OUTDOOR,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.AFTERNOON, TimeOfDay.EVENING),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.HEAVY,
+            category = ActivityCategory.SOCIAL
+        ))
+
+        add(createActivity(
+            title = "Meditation Session",
+            description = "Relax and focus your mind indoors",
+            icon = "🪷",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COOL, TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.ANYTIME),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.WELLNESS
+        ))
+
+        add(createActivity(
+            title = "Concert or Live Music",
+            description = "Enjoy a live performance at a local venue",
+            icon = "🎵",
+            weather = OUTDOOR_CLEAR,
+            temps = listOf(TempCategory.COMFORTABLE, TempCategory.WARM),
+            times = listOf(TimeOfDay.EVENING),
+            location = LocationType.OUTDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.ENTERTAINMENT
+        ))
+
+        add(createActivity(
+            title = "Visit Museum or Exhibit",
+            description = "Learn about history, art, or science",
+            icon = "🏛️",
+            weather = INDOOR_ANY,
+            temps = listOf(TempCategory.COOL, TempCategory.COMFORTABLE),
+            times = listOf(TimeOfDay.MORNING, TimeOfDay.AFTERNOON),
+            location = LocationType.INDOOR,
+            intensity = IntensityLevel.LIGHT,
+            category = ActivityCategory.EDUCATIONAL
+        ))
+    }
+
+    fun getSuggestions(
+        weatherCondition: WeatherCondition,
+        temperature: Double,
+        currentTime: TimeOfDay = TimeOfDay.getCurrentTimeOfDay(),
+        limit: Int = 5,
+        preferCurrentTime: Boolean = true,
+        excludeCategories: List<ActivityCategory> = emptyList(),
+        excludeIntensity: List<IntensityLevel> = emptyList()
+    ): List<Activity> {
+        val tempCategory = TempCategory.fromTemp(temperature)
+
+        val filtered = activities.filter { activity ->
+            val weatherOK = activity.isSuitableFor(
+                weatherCondition,
+                listOf(WeatherSuitability.PERFECT, WeatherSuitability.GOOD, WeatherSuitability.ACCEPTABLE)
+            )
+            val tempOK = tempCategory in activity.tempCategories
+            val categoryOK = activity.category !in excludeCategories
+            val intensityOK = activity.intensity !in excludeIntensity
+
+            weatherOK && tempOK && categoryOK && intensityOK
+        }
+
+        val timeMatching = filtered.filter { activity ->
+            currentTime in activity.timesOfDay || TimeOfDay.ANYTIME in activity.timesOfDay
+        }
+
+        val timeNotMatching = filtered.filter { activity ->
+            currentTime !in activity.timesOfDay && TimeOfDay.ANYTIME !in activity.timesOfDay
+        }
+
+        val sortedTimeMatching = timeMatching.sortedByDescending { it.getScore(weatherCondition) }
+        val sortedTimeNotMatching = timeNotMatching.sortedByDescending { it.getScore(weatherCondition) }
+
+        val prioritized = if (preferCurrentTime) {
+            sortedTimeMatching + sortedTimeNotMatching
+        } else {
+            (sortedTimeMatching + sortedTimeNotMatching).shuffled()
+        }
+
+        return prioritized.take(limit * 2).shuffled().take(limit)
+    }
+
+    fun getSuggestionsLegacy(
+        condition: String,
+        temperature: Double,
+        limit: Int = 5
+    ): List<ActivitySuggestion> {
+        val weatherCondition = WeatherCondition.fromString(condition)
+        val activities = getSuggestions(weatherCondition, temperature, limit = limit)
+
+        return activities.map { activity ->
+            ActivitySuggestion(
+                title = activity.title,
+                description = activity.description,
+                category = activity.category.toDisplayString(),
+                icon = activity.icon,
+                timeOfDay = activity.timesOfDay.firstOrNull()?.name?.lowercase(),
+                location = activity.locationType.toDisplayString()
+            )
+        }
+    }
+}
+
+/**
+ * Legacy data class for backward compatibility
+ */
 data class ActivitySuggestion(
     val title: String,
     val description: String,
     val category: String,
     val icon: String,
-    val timeOfDay: String? = null // morning, afternoon, evening, night, anytime
+    val timeOfDay: String? = null,
+    val location: String? = null
 )
-
-object ActivitySuggestions {
-
-    // Get time-appropriate activity suggestions
-    fun getSuggestions(condition: String, temperature: Double, limit: Int = 5): List<ActivitySuggestion> {
-        val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-        val timeOfDay = when (currentHour) {
-            in 5..11 -> "morning"
-            in 12..17 -> "afternoon"
-            in 18..21 -> "evening"
-            else -> "night"
-        }
-
-        // Get all possible activities
-        val allActivities = when {
-            temperature > 30 -> getHotWeatherActivities(condition)
-            temperature < 15 -> getColdWeatherActivities(condition)
-            else -> getPleasantWeatherActivities(condition)
-        }
-
-        // Filter by time of day
-        val timeAppropriate = allActivities.filter { activity ->
-            activity.timeOfDay == null || activity.timeOfDay == "anytime" || activity.timeOfDay == timeOfDay
-        }
-
-        // If not enough time-appropriate activities, add "anytime" activities
-        return if (timeAppropriate.size >= limit) {
-            timeAppropriate.shuffled().take(limit)
-        } else {
-            (timeAppropriate + allActivities.filter { it.timeOfDay == "anytime" })
-                .distinct()
-                .shuffled()
-                .take(limit)
-        }
-    }
-
-    private fun getHotWeatherActivities(condition: String): List<ActivitySuggestion> {
-        return when (condition.lowercase()) {
-            "clear", "sunny" -> listOf(
-                ActivitySuggestion("Early Morning Walk", "Take a walk before it gets too hot (5-7 AM)", "outdoor", "🌅", "morning"),
-                ActivitySuggestion("Swimming at the Pool", "Cool off with a refreshing swim", "outdoor", "🏊", "afternoon"),
-                ActivitySuggestion("Visit an Ice Cream Shop", "Treat yourself to your favorite flavor", "leisure", "🍦", "afternoon"),
-                ActivitySuggestion("Indoor Mall Shopping", "Stay cool while browsing stores", "indoor", "🛍️", "anytime"),
-                ActivitySuggestion("Movie Marathon at Home", "Watch movies in air-conditioned comfort", "indoor", "🎬", "anytime"),
-                ActivitySuggestion("Visit a Water Park", "Enjoy water slides and wave pools", "outdoor", "🏄", "afternoon"),
-                ActivitySuggestion("Indoor Bowling", "Fun activity in air-conditioned space", "indoor", "🎳", "anytime"),
-                ActivitySuggestion("Smoothie Making", "Blend refreshing cold drinks", "indoor", "🥤", "anytime"),
-                ActivitySuggestion("Evening Beach Walk", "Enjoy the sunset by the water", "outdoor", "🌊", "evening"),
-                ActivitySuggestion("Indoor Gym Session", "Work out in air-conditioned comfort", "fitness", "💪", "anytime")
-            )
-            "rain", "drizzle", "thunderstorm" -> getIndoorActivities()
-            "clouds", "cloudy" -> listOf(
-                ActivitySuggestion("Indoor Exercise", "Work out at an air-conditioned gym", "fitness", "🏋️", "anytime"),
-                ActivitySuggestion("Visit a Café", "Enjoy cold drinks in a cool café", "leisure", "☕", "anytime"),
-                ActivitySuggestion("Photography Walk", "Capture cloud formations", "outdoor", "📸", "afternoon"),
-                ActivitySuggestion("Shopping Mall", "Browse stores comfortably", "indoor", "🛒", "anytime"),
-                ActivitySuggestion("Indoor Badminton", "Play in an air-conditioned court", "fitness", "🏸", "anytime")
-            )
-            else -> getGeneralIndoorActivities()
-        }
-    }
-
-    private fun getColdWeatherActivities(condition: String): List<ActivitySuggestion> {
-        return when (condition.lowercase()) {
-            "clear", "sunny" -> listOf(
-                ActivitySuggestion("Morning Jog", "Perfect temperature for a run", "fitness", "🏃", "morning"),
-                ActivitySuggestion("Outdoor Picnic", "Pack warm drinks and enjoy the cool weather", "outdoor", "🧺", "afternoon"),
-                ActivitySuggestion("Visit a Park", "Relaxing walk in cool breeze", "outdoor", "🌳", "afternoon"),
-                ActivitySuggestion("Outdoor Photography", "Capture the beautiful clear day", "outdoor", "📷", "anytime"),
-                ActivitySuggestion("Cycling", "Perfect weather for a bike ride", "fitness", "🚴", "morning"),
-                ActivitySuggestion("Hiking", "Enjoy trails in cool weather", "outdoor", "⛰️", "morning"),
-                ActivitySuggestion("Outdoor Yoga", "Practice in refreshing air", "fitness", "🧘", "morning"),
-                ActivitySuggestion("Visit Botanical Garden", "Enjoy flowers in cool weather", "outdoor", "🌺", "afternoon"),
-                ActivitySuggestion("Street Food Tour", "Try local food in comfortable weather", "leisure", "🍜", "evening"),
-                ActivitySuggestion("Evening Coffee", "Warm drinks at a cozy café", "leisure", "☕", "evening")
-            )
-            "rain", "drizzle", "thunderstorm" -> getIndoorActivities()
-            "clouds", "cloudy" -> listOf(
-                ActivitySuggestion("Cozy Coffee Shop", "Enjoy hot drinks", "leisure", "☕", "anytime"),
-                ActivitySuggestion("Light Outdoor Walk", "Peaceful walk in cool weather", "outdoor", "🚶", "afternoon"),
-                ActivitySuggestion("Read at the Park", "Find a cozy spot with a book", "leisure", "📚", "afternoon"),
-                ActivitySuggestion("Visit Art Gallery", "Explore indoor exhibits", "indoor", "🎨", "anytime"),
-                ActivitySuggestion("Cooking Class", "Learn new recipes indoors", "indoor", "👨‍🍳", "anytime")
-            )
-            else -> getGeneralIndoorActivities()
-        }
-    }
-
-    private fun getPleasantWeatherActivities(condition: String): List<ActivitySuggestion> {
-        return when (condition.lowercase()) {
-            "clear", "sunny" -> listOf(
-                ActivitySuggestion("Hiking Adventure", "Perfect weather for trails", "outdoor", "⛰️", "morning"),
-                ActivitySuggestion("Outdoor Picnic", "Pack snacks and enjoy sunshine", "outdoor", "🧺", "afternoon"),
-                ActivitySuggestion("Beach Day", "Soak up the sun", "outdoor", "🏖️", "afternoon"),
-                ActivitySuggestion("Outdoor Sports", "Play basketball or volleyball", "fitness", "⚽", "afternoon"),
-                ActivitySuggestion("Visit a Garden", "Explore botanical gardens", "outdoor", "🌺", "afternoon"),
-                ActivitySuggestion("Morning Run", "Start your day with exercise", "fitness", "🏃", "morning"),
-                ActivitySuggestion("Outdoor Breakfast", "Dine alfresco", "leisure", "🥞", "morning"),
-                ActivitySuggestion("Kayaking", "Enjoy water activities", "outdoor", "🚣", "afternoon"),
-                ActivitySuggestion("Farmers Market", "Browse fresh local produce", "outdoor", "🥕", "morning"),
-                ActivitySuggestion("Sunset Viewing", "Find a scenic spot", "outdoor", "🌅", "evening"),
-                ActivitySuggestion("Outdoor Concert", "Enjoy live music", "leisure", "🎵", "evening"),
-                ActivitySuggestion("Bike Tour", "Explore the city on two wheels", "fitness", "🚲", "morning")
-            )
-            "rain", "drizzle", "thunderstorm" -> getIndoorActivities()
-            "clouds", "cloudy" -> listOf(
-                ActivitySuggestion("Photography Walk", "Capture moody shots", "outdoor", "📸", "afternoon"),
-                ActivitySuggestion("Café Hopping", "Try different coffee shops", "leisure", "☕", "anytime"),
-                ActivitySuggestion("Light Jogging", "Comfortable running weather", "fitness", "🏃", "morning"),
-                ActivitySuggestion("Visit Local Markets", "Browse without harsh sun", "leisure", "🛒", "afternoon"),
-                ActivitySuggestion("Outdoor Meditation", "Find peace in nature", "fitness", "🧘", "morning"),
-                ActivitySuggestion("Sketching Outdoors", "Draw in natural light", "leisure", "✏️", "afternoon")
-            )
-            else -> getGeneralIndoorActivities()
-        }
-    }
-
-    private fun getIndoorActivities(): List<ActivitySuggestion> {
-        return listOf(
-            ActivitySuggestion("Bake Something Delicious", "Try a new recipe", "indoor", "🍪", "anytime"),
-            ActivitySuggestion("Movie Marathon", "Catch up on series or movies", "indoor", "🎬", "anytime"),
-            ActivitySuggestion("Read a Book", "Dive into a good book", "indoor", "📚", "anytime"),
-            ActivitySuggestion("Indoor Workout", "Follow a home routine", "fitness", "🧘", "anytime"),
-            ActivitySuggestion("Learn Something New", "Take an online course", "indoor", "💻", "anytime"),
-            ActivitySuggestion("Board Games Night", "Play with friends or family", "indoor", "🎲", "evening"),
-            ActivitySuggestion("Art and Crafts", "Get creative with DIY projects", "indoor", "🎨", "anytime"),
-            ActivitySuggestion("Cooking Challenge", "Try a complex recipe", "indoor", "🍳", "anytime"),
-            ActivitySuggestion("Video Gaming", "Enjoy your favorite games", "indoor", "🎮", "anytime"),
-            ActivitySuggestion("Meditation Session", "Practice mindfulness indoors", "fitness", "🧘", "anytime"),
-            ActivitySuggestion("Journaling", "Write about your day", "indoor", "📝", "evening"),
-            ActivitySuggestion("Online Shopping", "Browse for new items", "indoor", "🛍️", "anytime")
-        )
-    }
-
-    private fun getGeneralIndoorActivities(): List<ActivitySuggestion> {
-        return listOf(
-            ActivitySuggestion("Visit a Museum", "Explore exhibits", "indoor", "🏛️", "anytime"),
-            ActivitySuggestion("Shopping Mall Visit", "Browse and dine indoors", "indoor", "🛍️", "anytime"),
-            ActivitySuggestion("Indoor Gym Session", "Controlled environment workout", "fitness", "💪", "anytime"),
-            ActivitySuggestion("Cooking New Recipe", "Try something new", "indoor", "🍳", "anytime"),
-            ActivitySuggestion("Library Visit", "Discover new books", "indoor", "📚", "anytime"),
-            ActivitySuggestion("Spa Day", "Relax and rejuvenate", "indoor", "💆", "anytime"),
-            ActivitySuggestion("Rock Climbing Gym", "Indoor climbing adventure", "fitness", "🧗", "anytime"),
-            ActivitySuggestion("Karaoke Night", "Sing your heart out", "leisure", "🎤", "evening")
-        )
-    }
-}

@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.CurrentWeatherResponse
-import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.ForecastResponse
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.WeatherRepository
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.providers.LocationProvider
 

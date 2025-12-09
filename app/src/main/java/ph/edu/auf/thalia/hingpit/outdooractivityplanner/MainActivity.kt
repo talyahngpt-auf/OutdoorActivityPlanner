@@ -1,7 +1,6 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner
 
-import android.content.Intent
-import android.net.Uri
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,8 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -21,7 +19,6 @@ import ph.edu.auf.thalia.hingpit.outdooractivityplanner.apis.interfaces.WeatherA
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.auth.FirebaseAuthManager
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.AppDatabase
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.ActivityRepository
-import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.UserPreferencesRepository
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.WeatherRepository
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.providers.LocationProvider
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.sync.FirebaseSyncManager
@@ -29,40 +26,40 @@ import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens.*
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.theme.OutdoorActivityPlannerTheme
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.Constants
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.*
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import android.content.pm.PackageManager
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.UserPreferencesRepository
+
 
 class MainActivity : ComponentActivity() {
-    private lateinit var database: AppDatabase
-    private lateinit var weatherRepository: WeatherRepository
-    private lateinit var activityRepository: ActivityRepository
-    private lateinit var userPreferencesRepository: UserPreferencesRepository
-    private lateinit var locationProvider: LocationProvider
-    private lateinit var authManager: FirebaseAuthManager
-    private lateinit var syncManager: FirebaseSyncManager
+    // Lazy initialization of dependencies
+    private val database by lazy { AppDatabase.getDatabase(this) }
+    private val weatherApi by lazy {
+        RetrofitFactory.create(Constants.WEATHER_BASE_URL)
+            .create(WeatherApiService::class.java)
+    }
+
+
+    private val weatherRepository by lazy {
+        WeatherRepository(weatherApi, database.weatherCacheDao())
+    }
+    private val activityRepository by lazy {
+        ActivityRepository(database.activityDao())
+    }
+    private val locationProvider by lazy { LocationProvider(this) }
+    private val authManager by lazy { FirebaseAuthManager(this) }
+    private val syncManager by lazy { FirebaseSyncManager() }
+
+
+    private val userPreferencesRepository by lazy { UserPreferencesRepository(database.userPreferencesDao()) }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialize Room Database
-        database = AppDatabase.getDatabase(this)
-
-        // Initialize API
-        val weatherApi = RetrofitFactory.create(Constants.WEATHER_BASE_URL)
-            .create(WeatherApiService::class.java)
-
-        // Initialize Repositories
-        weatherRepository = WeatherRepository(weatherApi, database.weatherCacheDao())
-        activityRepository = ActivityRepository(database.activityDao())
-        userPreferencesRepository = UserPreferencesRepository(database.userPreferencesDao())
-
-        // Initialize LocationProvider
-        locationProvider = LocationProvider(this)
-
-        // Initialize Firebase managers
-        authManager = FirebaseAuthManager(this)
-        syncManager = FirebaseSyncManager()
-
-        // Handle email link sign-in
-        handleEmailLinkSignIn(intent)
 
         setContent {
             OutdoorActivityPlannerTheme {
@@ -73,222 +70,191 @@ class MainActivity : ComponentActivity() {
                     MainApp(
                         weatherRepository = weatherRepository,
                         activityRepository = activityRepository,
-                        userPreferencesRepository = userPreferencesRepository,
                         locationProvider = locationProvider,
                         authManager = authManager,
-                        syncManager = syncManager
+                        syncManager = syncManager,
+                        userPreferencesRepository = userPreferencesRepository
                     )
                 }
             }
         }
     }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        handleEmailLinkSignIn(intent)
-    }
-
-    private fun handleEmailLinkSignIn(intent: Intent?) {
-        val emailLink = intent?.data?.toString()
-        if (emailLink != null && authManager.isSignInLink(emailLink)) {
-            // Get the email from SharedPreferences or ask user
-            val email = authManager.getSavedEmail()
-            if (email != null) {
-                // Complete sign-in in background
-                // This will be handled by AuthViewModel
-            }
-        }
-    }
 }
+
 
 @Composable
 fun MainApp(
     weatherRepository: WeatherRepository,
     activityRepository: ActivityRepository,
-    userPreferencesRepository: UserPreferencesRepository,
     locationProvider: LocationProvider,
     authManager: FirebaseAuthManager,
-    syncManager: FirebaseSyncManager
+    syncManager: FirebaseSyncManager,
+    userPreferencesRepository: UserPreferencesRepository
 ) {
     val navController = rememberNavController()
+    val context = LocalContext.current
 
-    // Create ViewModels
-    val weatherViewModel: WeatherViewModel = viewModel(
-        factory = WeatherViewModelFactory(weatherRepository, locationProvider)
-    )
 
-    val activityViewModel: ActivityViewModel = viewModel(
-        factory = ActivityViewModelFactory(activityRepository)
-    )
 
-    val authViewModel: AuthViewModel = viewModel(
-        factory = AuthViewModelFactory(authManager, syncManager, userPreferencesRepository)
-    )
 
-    val syncViewModel: SyncViewModel = viewModel(
-        factory = SyncViewModelFactory(authManager, syncManager, activityRepository, userPreferencesRepository)
-    )
-
-    // Observe auth state to navigate
-    val authState by authViewModel.authState.collectAsState()
-    val startDestination = when (authState) {
-        is AuthState.Authenticated -> "home"
-        is AuthState.Unauthenticated -> "login"
-        else -> "login"
-    }
-
-    LaunchedEffect(authState) {
-        when (authState) {
-            is AuthState.Authenticated -> {
-                if (navController.currentDestination?.route == "login" ||
-                    navController.currentDestination?.route == "signup") {
-                    navController.navigate("home") {
-                        popUpTo("login") { inclusive = true }
-                    }
-                }
+    // ✅ Request location permissions at startup
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+        onResult = { permissions ->
+            val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+            val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+            if (fineGranted || coarseGranted) {
+                // Permissions granted → LocationProvider can be used safely
             }
-            is AuthState.Unauthenticated -> {
-                if (navController.currentDestination?.route != "login" &&
-                    navController.currentDestination?.route != "signup" &&
-                    navController.currentDestination?.route != "forgot_password") {
-                    navController.navigate("login") {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            }
-            else -> {}
+        }
+    )
+
+
+    LaunchedEffect(Unit) {
+        val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+
+
+        if (fine != PackageManager.PERMISSION_GRANTED && coarse != PackageManager.PERMISSION_GRANTED) {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
         }
     }
+    // Create unified factory
+    val weatherFactory = remember {
+        AppViewModelFactory(
+            weatherRepository = weatherRepository,
+            locationProvider = locationProvider
+        )
+    }
+
+
+    val activityFactory = remember {
+        AppViewModelFactory(activityRepository = activityRepository)
+    }
+
+
+    val authFactory = remember {
+        AppViewModelFactory(
+            authManager = authManager,
+            syncManager = syncManager,
+            userPreferencesRepository = userPreferencesRepository
+        )
+    }
+
+
+    val syncFactory = remember {
+        AppViewModelFactory(
+            authManager = authManager,
+            syncManager = syncManager,
+            activityRepository = activityRepository,
+            userPreferencesRepository = userPreferencesRepository
+        )
+    }
+
+
+    // Create ViewModels
+    val weatherViewModel: WeatherViewModel = viewModel(factory = weatherFactory)
+    val activityViewModel: ActivityViewModel = viewModel(factory = activityFactory)
+    val authViewModel: AuthViewModel = viewModel(factory = authFactory)
+    val syncViewModel: SyncViewModel = viewModel(factory = syncFactory)
+
+
+    val authState by authViewModel.authState.collectAsState()
+
+
+    // Track if we've shown splash
+    var hasShownSplash by remember { mutableStateOf(false) }
+
+
+    // Determine destination
+    val startDestination = if (!hasShownSplash) {
+        "splash"
+    } else {
+        when (authState) {
+            is AuthState.Authenticated -> "home"
+            is AuthState.Unauthenticated -> "login"
+            else -> "login"
+        }
+    }
+
+
+    // ✅ KEEP YOUR EXISTING NAVIGATION LOGIC
+    LaunchedEffect(authState) {
+        // Only navigate after splash is done
+        if (hasShownSplash) {
+            when (authState) {
+                is AuthState.Authenticated -> {
+                    if (navController.currentDestination?.route == "login" ||
+                        navController.currentDestination?.route == "signup") {
+                        navController.navigate("home") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    }
+                }
+                is AuthState.Unauthenticated -> {
+                    if (navController.currentDestination?.route != "login" &&
+                        navController.currentDestination?.route != "signup" &&
+                        navController.currentDestination?.route != "forgot_password") {
+                        navController.navigate("login") {
+                            popUpTo("splash") { inclusive = true }
+                        }
+                    }
+                }
+                else -> {}
+            }
+        }
+    }
+
 
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
+        composable("splash") {
+            SplashScreen(
+                navController = navController,
+                authViewModel = authViewModel,
+                weatherViewModel = weatherViewModel,
+                onSplashComplete = { hasShownSplash = true }
+            )
+        }
+
+
         // Auth screens
         composable("login") {
-            LoginScreen(
-                navController = navController,
-                authViewModel = authViewModel
-            )
+            LoginScreen(navController, authViewModel)
         }
-
         composable("signup") {
-            SignUpScreen(
-                navController = navController,
-                authViewModel = authViewModel
-            )
+            SignUpScreen(navController, authViewModel)
         }
-
         composable("forgot_password") {
-            ForgotPasswordScreen(
-                navController = navController,
-                authViewModel = authViewModel
-            )
+            ForgotPasswordScreen(navController, authViewModel)
         }
 
-        composable("email_link_signin") {
-            EmailLinkSignInScreen(
-                navController = navController,
-                authViewModel = authViewModel
-            )
-        }
 
         // Main app screens
         composable("home") {
-            HomeScreen(
-                navController = navController,
-                weatherViewModel = weatherViewModel,
-                activityViewModel = activityViewModel
-            )
+            HomeScreen(navController, weatherViewModel, activityViewModel)
         }
-
         composable("today") {
-            TodayScreen(
-                navController = navController,
-                activityViewModel = activityViewModel,
-                weatherViewModel = weatherViewModel
-            )
+            TodayScreen(navController, activityViewModel, weatherViewModel)
         }
-
         composable("activities") {
-            ActivityLogScreen(
-                navController = navController,
-                activityViewModel = activityViewModel
-            )
+            ActivityLogScreen(navController, activityViewModel)
         }
-
         composable("forecast") {
-            ForecastScreen(
-                navController = navController,
-                weatherViewModel = weatherViewModel,
-                activityViewModel = activityViewModel
-            )
+            ForecastScreen(navController, weatherViewModel, activityViewModel)
         }
-
         composable("settings") {
-            SettingsScreen(
-                navController = navController,
-                authViewModel = authViewModel,
-                syncViewModel = syncViewModel
-            )
+            SettingsScreen(navController, authViewModel, syncViewModel)
         }
-    }
-}
-
-// ViewModel Factory for WeatherViewModel
-class WeatherViewModelFactory(
-    private val repository: WeatherRepository,
-    private val locationProvider: LocationProvider
-) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(WeatherViewModel::class.java)) {
-            return WeatherViewModel(repository, locationProvider) as T
+        composable("account_management") {
+            AccountManagementScreen(navController, authViewModel)
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
-
-// ViewModel Factory for ActivityViewModel
-class ActivityViewModelFactory(
-    private val repository: ActivityRepository
-) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(ActivityViewModel::class.java)) {
-            return ActivityViewModel(repository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
-
-// ViewModel Factory for AuthViewModel
-class AuthViewModelFactory(
-    private val authManager: FirebaseAuthManager,
-    private val syncManager: FirebaseSyncManager,
-    private val userPreferencesRepository: UserPreferencesRepository
-) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
-            return AuthViewModel(authManager, syncManager, userPreferencesRepository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
-
-// ViewModel Factory for SyncViewModel
-class SyncViewModelFactory(
-    private val authManager: FirebaseAuthManager,
-    private val syncManager: FirebaseSyncManager,
-    private val activityRepository: ActivityRepository,
-    private val userPreferencesRepository: UserPreferencesRepository
-) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(SyncViewModel::class.java)) {
-            return SyncViewModel(authManager, syncManager, activityRepository, userPreferencesRepository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

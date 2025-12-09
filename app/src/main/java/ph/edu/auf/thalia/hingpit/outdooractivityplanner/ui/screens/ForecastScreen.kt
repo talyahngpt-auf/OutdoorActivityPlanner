@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +18,7 @@ import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.getDailyFor
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.components.BottomNavigationBar
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.components.ExpandedForecastCard
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.components.AddActivityDialog
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.components.ScreenHeader
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.ActivitySuggestion
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.ActivityViewModel
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.WeatherViewModel
@@ -37,15 +40,15 @@ fun ForecastScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("5-Day Forecast") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, "Back")
-                    }
-                }
+            ScreenHeader(
+                title = "5-Day Forecast",
+                subtitle = "Weather predictions",
+                icon = Icons.Default.List,
+                showBackButton = true,
+                onBackClick = { navController.popBackStack() }
             )
         },
+
         bottomBar = {
             BottomNavigationBar(navController)
         }
@@ -159,7 +162,7 @@ fun ForecastScreen(
             activity = selectedActivity,
             weatherData = currentWeather,
             onDismiss = { showAddDialog = false },
-            onConfirm = { title, description, date, time, icon, weatherIconCode ->
+            onConfirm = { title, description, date, time, icon, weatherIconCode, locationType, category ->
                 currentWeather?.let { weather ->
                     activityViewModel.addActivity(
                         title = title,
@@ -167,7 +170,9 @@ fun ForecastScreen(
                         date = date,
                         time = time,
                         weatherCondition = weather.weather.firstOrNull()?.main ?: "Clear",
-                        weatherIconCode = weatherIconCode // Pass the icon code
+                        weatherIconCode = weatherIconCode,
+                        locationType = locationType,
+                        category = category
                     )
                 }
                 showAddDialog = false

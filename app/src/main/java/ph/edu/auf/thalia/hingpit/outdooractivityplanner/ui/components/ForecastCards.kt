@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.DailyForecastSummary
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.ActivitySuggestion
-import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.ActivitySuggestions
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.ActivityMasterList
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.DateUtils
 import java.text.SimpleDateFormat
 import java.util.*
@@ -81,7 +81,7 @@ fun ExpandedForecastCard(
     val dateString = DateUtils.formatToMonthDay(dailyForecast.date)
 
     val condition = dailyForecast.weather.firstOrNull()?.main ?: "Clear"
-    val suggestions = ActivitySuggestions.getSuggestions(condition, dailyForecast.avgTemp, limit = 4)
+    val suggestions = ActivityMasterList.getSuggestionsLegacy(condition = condition, temperature = dailyForecast.avgTemp, limit = 4)
 
     Card(
         modifier = modifier.fillMaxWidth(),

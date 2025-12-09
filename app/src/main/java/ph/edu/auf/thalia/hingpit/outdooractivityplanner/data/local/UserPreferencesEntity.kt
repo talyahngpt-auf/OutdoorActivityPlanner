@@ -1,7 +1,9 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local
 
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+
 
 @Entity(tableName = "user_preferences")
 data class UserPreferencesEntity(
@@ -16,6 +18,7 @@ data class UserPreferencesEntity(
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )
+
 
 // Helper data class for preferences
 data class UserPreferences(
@@ -43,6 +46,7 @@ data class UserPreferences(
         )
     }
 }
+
 
 fun UserPreferencesEntity.toPreferences(): UserPreferences {
     return UserPreferences(

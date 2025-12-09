@@ -4,12 +4,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -21,12 +23,15 @@ import com.google.accompanist.permissions.shouldShowRationale
 import kotlinx.coroutines.launch
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.getDailyForecasts
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.components.*
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.ActivityMasterList
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.ActivitySuggestion
-import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.ActivitySuggestions
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.Constants
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.TimeOfDay
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.WeatherCondition
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.WeatherUtils
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.ActivityViewModel
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.WeatherViewModel
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -58,40 +63,57 @@ fun HomeScreen(
 
     LaunchedEffect(weatherData, refreshKey) {
         weatherData?.let { weather ->
-            val condition = weather.weather.firstOrNull()?.main ?: "Clear"
-            val temp = weather.main.temp
-            activitySuggestions = ActivitySuggestions.getSuggestions(condition, temp, limit = 5)
+            val weatherCondition = WeatherCondition.fromString(
+                weather.weather.firstOrNull()?.main ?: "Clear"
+            )
+            val currentTimeOfDay = TimeOfDay.getCurrentTimeOfDay()
+            val currentTemp = weather.main.temp
+
+            activitySuggestions = ActivityMasterList.getSuggestions(
+                weatherCondition = weatherCondition,
+                temperature = currentTemp,
+                currentTime = currentTimeOfDay,
+                limit = 5
+            ).map { activity: ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.Activity ->
+                ActivitySuggestion(
+                    title = activity.title,
+                    description = activity.description,
+                    category = activity.category.toDisplayString(),
+                    icon = activity.icon,
+                    timeOfDay = activity.timesOfDay.firstOrNull()?.name?.lowercase(),
+                    location = activity.locationType.toDisplayString()
+                )
+            }
         }
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Outdoor Activity Planner") },
+            HomeHeader(
                 actions = {
                     IconButton(onClick = { navController.navigate("forecast") }) {
-                        Icon(Icons.Default.List, contentDescription = "View Forecast Details")
+                        Icon(Icons.Default.List, "Forecast")
                     }
                 }
             )
         },
-        bottomBar = {
-            BottomNavigationBar(navController)
-        },
+        bottomBar = { BottomNavigationBar(navController) },
+        // ✅ ADD THIS: Floating Action Button
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showCustomActivityDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.shadow(8.dp, RoundedCornerShape(16.dp))
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Custom Activity")
+                Icon(Icons.Default.Add, contentDescription = "Create Activity")
             }
         }
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
+                .padding(paddingValues),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
@@ -365,12 +387,13 @@ fun HomeScreen(
         }
     }
 
+    // Dialog for adding suggested activities
     if (showAddDialog && selectedActivity != null) {
         AddActivityDialog(
             activity = selectedActivity,
             weatherData = weatherData,
             onDismiss = { showAddDialog = false },
-            onConfirm = { title, description, date, time, icon, weatherIconCode ->
+            onConfirm = { title, description, date, time, icon, weatherIconCode, locationType, category ->
                 weatherData?.let { weather ->
                     activityViewModel.addActivity(
                         title = title,
@@ -378,7 +401,9 @@ fun HomeScreen(
                         date = date,
                         time = time,
                         weatherCondition = weather.weather.firstOrNull()?.main ?: "Clear",
-                        weatherIconCode = weatherIconCode // Pass the icon code
+                        weatherIconCode = weatherIconCode,
+                        locationType = locationType,
+                        category = category
                     )
                 }
                 showAddDialog = false
@@ -386,12 +411,13 @@ fun HomeScreen(
         )
     }
 
+    // ✅ Dialog for creating custom activities from scratch
     if (showCustomActivityDialog) {
         AddActivityDialog(
-            activity = null,
+            activity = null,  // Pass null to create from scratch
             weatherData = weatherData,
             onDismiss = { showCustomActivityDialog = false },
-            onConfirm = { title, description, date, time, icon, weatherIconCode ->
+            onConfirm = { title, description, date, time, icon, weatherIconCode, locationType, category ->
                 weatherData?.let { weather ->
                     activityViewModel.addActivity(
                         title = title,
@@ -399,7 +425,9 @@ fun HomeScreen(
                         date = date,
                         time = time,
                         weatherCondition = weather.weather.firstOrNull()?.main ?: "Clear",
-                        weatherIconCode = weatherIconCode // Pass the icon code
+                        weatherIconCode = weatherIconCode,
+                        locationType = locationType,
+                        category = category
                     )
                 }
                 showCustomActivityDialog = false
@@ -407,6 +435,7 @@ fun HomeScreen(
         )
     }
 }
+
 
 @Composable
 fun ImprovedWeatherCard(weather: ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.CurrentWeatherResponse) {
@@ -475,6 +504,7 @@ fun ImprovedWeatherCard(weather: ph.edu.auf.thalia.hingpit.outdooractivityplanne
         }
     }
 }
+
 
 @Composable
 private fun WeatherDetailItem(value: String) {

@@ -1,5 +1,6 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens
 
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,12 +15,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.components.BottomNavigationBar
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.components.ScreenHeader
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.AuthState
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.AuthViewModel
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.SyncStatus
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.SyncViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,15 +36,21 @@ fun SettingsScreen(
     val lastSyncTimestamp by syncViewModel.lastSyncTimestamp.collectAsState()
     val syncStatus by syncViewModel.syncStatus.collectAsState()
 
+
     var showSignOutDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
 
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Settings") }
+            ScreenHeader(
+                title = "Settings",
+                subtitle = "Manage your preferences",
+                icon = Icons.Default.Settings
             )
         },
+
+
         bottomBar = {
             BottomNavigationBar(navController)
         }
@@ -102,12 +111,14 @@ fun SettingsScreen(
                         }
                     }
 
+
                     // Sync Section
                     Text(
                         text = "Data Synchronization",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
+
 
                     Card(
                         modifier = Modifier.fillMaxWidth()
@@ -135,6 +146,7 @@ fun SettingsScreen(
                                     )
                                 }
 
+
                                 // Sync Status Indicator
                                 when (syncStatus) {
                                     is SyncStatus.Syncing -> {
@@ -160,7 +172,9 @@ fun SettingsScreen(
                                 }
                             }
 
+
                             Spacer(modifier = Modifier.height(16.dp))
+
 
                             // Sync Button
                             Button(
@@ -172,6 +186,7 @@ fun SettingsScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(if (isSyncing) "Syncing..." else "Sync Now")
                             }
+
 
                             // Sync Info
                             if (syncStatus is SyncStatus.Success) {
@@ -196,6 +211,7 @@ fun SettingsScreen(
                                 }
                             }
 
+
                             if (syncStatus is SyncStatus.Error) {
                                 val message = (syncStatus as SyncStatus.Error).message
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -214,6 +230,7 @@ fun SettingsScreen(
                         }
                     }
 
+
                     // Account Actions
                     Text(
                         text = "Account",
@@ -221,10 +238,29 @@ fun SettingsScreen(
                         fontWeight = FontWeight.Bold
                     )
 
+
                     Card(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column {
+                            ListItem(
+                                headlineContent = { Text("Account Management") },
+                                supportingContent = { Text("Password, linked accounts") },
+                                leadingContent = {
+                                    Icon(Icons.Default.AccountCircle, contentDescription = null)
+                                },
+                                trailingContent = {
+                                    Icon(Icons.Default.KeyboardArrowRight, contentDescription = null)
+                                },
+                                modifier = Modifier.clickable {
+                                    navController.navigate("account_management")
+                                }
+                            )
+
+
+                            HorizontalDivider()
+
+
                             ListItem(
                                 headlineContent = { Text("Sign Out") },
                                 leadingContent = {
@@ -235,7 +271,9 @@ fun SettingsScreen(
                                 }
                             )
 
+
                             HorizontalDivider()
+
 
                             ListItem(
                                 headlineContent = {
@@ -258,6 +296,7 @@ fun SettingsScreen(
                         }
                     }
                 }
+
 
                 is AuthState.Unauthenticated -> {
                     // Not signed in
@@ -299,6 +338,7 @@ fun SettingsScreen(
                     }
                 }
 
+
                 else -> {
                     // Loading
                     Box(
@@ -312,12 +352,14 @@ fun SettingsScreen(
                 }
             }
 
+
             // App Info
             Text(
                 text = "About",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
+
 
             Card(
                 modifier = Modifier.fillMaxWidth()
@@ -334,6 +376,7 @@ fun SettingsScreen(
             }
         }
     }
+
 
     // Sign Out Dialog
     if (showSignOutDialog) {
@@ -361,6 +404,7 @@ fun SettingsScreen(
             }
         )
     }
+
 
     // Delete Account Dialog
     if (showDeleteAccountDialog) {

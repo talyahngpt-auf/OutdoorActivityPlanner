@@ -20,8 +20,10 @@ import androidx.navigation.NavController
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.res.painterResource
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
+import ph.edu.auf.thalia.hingpit.outdooractivityplanner.R
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.viewmodel.AuthViewModel
 
 @Composable
@@ -77,14 +79,14 @@ fun LoginScreen(
                 )
 
                 Text(
-                    text = "Outdoor Activity Planner",
+                    text = "W.A.R.M",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
 
                 Text(
-                    text = "Plan your outdoor activities based on weather",
+                    text = "Your Weather-Aware Routine Mapper",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center
@@ -198,22 +200,16 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading
                 ) {
-                    Text("🔵", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Continue with Google")
-                }
 
-                // Email Link Sign In
-                OutlinedButton(
-                    onClick = {
-                        navController.navigate("email_link_signin")
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading
-                ) {
-                    Text("🔗", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Sign In with Email Link")
+                // Google Logo - You'll need to add the Google logo drawable
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_google_logo), // Replace with actual Google logo
+                    contentDescription = "Google Logo",
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Continue with Google")
                 }
 
                 // Continue as Guest

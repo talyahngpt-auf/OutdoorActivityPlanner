@@ -111,7 +111,9 @@ class ActivityViewModel(
         date: String,
         time: String,
         weatherCondition: String,
-        weatherIconCode: String // NEW PARAMETER
+        weatherIconCode: String,
+        locationType: String,
+        category: String
     ) {
         viewModelScope.launch {
             try {
@@ -124,6 +126,8 @@ class ActivityViewModel(
                     time = time,
                     weatherCondition = weatherCondition,
                     weatherIconCode = weatherIconCode, // STORE ICON CODE
+                    locationType = locationType,
+                    category = category,
                     isCompleted = false,
                     createdAt = System.currentTimeMillis()
                 )

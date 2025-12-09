@@ -117,6 +117,8 @@ dependencies {
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.0")
 
 
+    implementation("com.google.accompanist:accompanist-flowlayout:0.34.0")
+
     // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
