@@ -11,9 +11,6 @@ import ph.edu.auf.thalia.hingpit.outdooractivityplanner.providers.LocationProvid
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.sync.FirebaseSyncManager
 
 
-/**
- * Unified ViewModelFactory for all ViewModels in the app
- */
 class AppViewModelFactory(
     private val weatherRepository: WeatherRepository? = null,
     private val activityRepository: ActivityRepository? = null,

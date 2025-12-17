@@ -62,7 +62,7 @@ class SyncViewModel(
                 _errorMessage.value = null
 
                 // Get local data
-                val localActivities = activityRepository.getAllActivities()
+                val localActivities = activityRepository.getAllActivities(userId)
                 val localPreferences = userPreferencesRepository.getPreferences(userId)
 
                 // Perform full sync
@@ -108,7 +108,7 @@ class SyncViewModel(
                 _isSyncing.value = true
                 _errorMessage.value = null
 
-                val activities = activityRepository.getAllActivities()
+                val activities = activityRepository.getAllActivities(userId)
                 val result = syncManager.syncActivitiesToCloud(userId, activities)
 
                 if (result.isFailure) {

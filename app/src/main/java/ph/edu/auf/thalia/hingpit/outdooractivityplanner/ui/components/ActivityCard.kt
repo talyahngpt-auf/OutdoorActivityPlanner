@@ -99,7 +99,6 @@ fun ActivityCard(
                 }
             }
 
-            // Add button
             FilledTonalButton(
                 onClick = onAddToPlan,
                 modifier = Modifier.padding(start = 8.dp)

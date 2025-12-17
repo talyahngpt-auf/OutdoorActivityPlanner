@@ -18,7 +18,7 @@ import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.dao.WeatherCa
         WeatherCache::class,
         UserPreferencesEntity::class
     ],
-    version = 4,   // ✅ bumped version
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -63,7 +63,7 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
 
-        // ✅ Migration from version 3 to 4: add locationType and category columns
+        // Migration from version 3 to 4: add locationType and category columns
         private val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE activities ADD COLUMN locationType TEXT NOT NULL DEFAULT 'Indoor'")
@@ -71,6 +71,11 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE activities ADD COLUMN userId TEXT NOT NULL DEFAULT ''")
+            }
+        }
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -79,7 +84,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "outdoor_activity_planner_db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4) // ✅ include new migration
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5) // include new migration
                     .build()
                 INSTANCE = instance
                 instance

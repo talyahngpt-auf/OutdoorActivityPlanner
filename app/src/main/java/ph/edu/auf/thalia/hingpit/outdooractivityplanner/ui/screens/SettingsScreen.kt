@@ -63,11 +63,9 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Account Section
             when (val state = authState) {
                 is AuthState.Authenticated -> {
-                    // User Info Card
-                    Card(
+                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -112,8 +110,7 @@ fun SettingsScreen(
                     }
 
 
-                    // Sync Section
-                    Text(
+                     Text(
                         text = "Data Synchronization",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
@@ -126,8 +123,7 @@ fun SettingsScreen(
                         Column(
                             modifier = Modifier.padding(16.dp)
                         ) {
-                            // Sync Status
-                            Row(
+                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
@@ -147,8 +143,7 @@ fun SettingsScreen(
                                 }
 
 
-                                // Sync Status Indicator
-                                when (syncStatus) {
+                                 when (syncStatus) {
                                     is SyncStatus.Syncing -> {
                                         CircularProgressIndicator(modifier = Modifier.size(24.dp))
                                     }
@@ -176,8 +171,7 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
 
-                            // Sync Button
-                            Button(
+                             Button(
                                 onClick = { syncViewModel.performSync() },
                                 modifier = Modifier.fillMaxWidth(),
                                 enabled = !isSyncing
@@ -188,8 +182,7 @@ fun SettingsScreen(
                             }
 
 
-                            // Sync Info
-                            if (syncStatus is SyncStatus.Success) {
+                             if (syncStatus is SyncStatus.Success) {
                                 val result = (syncStatus as SyncStatus.Success).result
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Surface(
@@ -231,8 +224,7 @@ fun SettingsScreen(
                     }
 
 
-                    // Account Actions
-                    Text(
+                     Text(
                         text = "Account",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
@@ -340,8 +332,7 @@ fun SettingsScreen(
 
 
                 else -> {
-                    // Loading
-                    Box(
+                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(32.dp),
@@ -352,9 +343,7 @@ fun SettingsScreen(
                 }
             }
 
-
-            // App Info
-            Text(
+             Text(
                 text = "About",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
@@ -378,7 +367,6 @@ fun SettingsScreen(
     }
 
 
-    // Sign Out Dialog
     if (showSignOutDialog) {
         AlertDialog(
             onDismissRequest = { showSignOutDialog = false },
@@ -406,7 +394,6 @@ fun SettingsScreen(
     }
 
 
-    // Delete Account Dialog
     if (showDeleteAccountDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteAccountDialog = false },

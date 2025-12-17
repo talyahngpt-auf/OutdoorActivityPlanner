@@ -54,7 +54,6 @@ fun ActivityItemCard(
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -64,7 +63,6 @@ fun ActivityItemCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
-                    // Custom Checkbox with animation
                     Surface(
                         modifier = Modifier
                             .size(32.dp)
@@ -178,7 +176,6 @@ fun ActivityItemCard(
                 ) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
-                    // Description
                     if (activity.description.isNotBlank()) {
                         Surface(
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -202,7 +199,6 @@ fun ActivityItemCard(
                             color = MaterialTheme.colorScheme.primary
                         )
 
-                        // Weather info
                         DetailInfoRow(
                             label = "Weather",
                             content = {
@@ -213,7 +209,6 @@ fun ActivityItemCard(
                             }
                         )
 
-                        // Location info
                         DetailInfoRow(
                             label = "Location",
                             content = {
@@ -225,7 +220,6 @@ fun ActivityItemCard(
                             }
                         )
 
-                        // Time info
                         DetailInfoRow(
                             label = "Time",
                             content = {

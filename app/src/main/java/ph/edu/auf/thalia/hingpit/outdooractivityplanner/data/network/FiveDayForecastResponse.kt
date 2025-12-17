@@ -24,7 +24,7 @@ data class ForecastItem(
     val wind: WindInfo,
 
     @SerializedName("dt_txt")
-    val dtTxt: String // "2024-07-17 12:00:00"
+    val dtTxt: String
 )
 
 data class CityInfo(

@@ -4,7 +4,6 @@ package ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.UserPreferences
-import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.UserPreferencesEntity
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.dao.UserPreferencesDao
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.toPreferences
 
@@ -51,7 +50,6 @@ class UserPreferencesRepository(
     }
 
 
-    // Create default preferences for a new user
     suspend fun createDefaultPreferences(userId: String): UserPreferences {
         val defaultPreferences = UserPreferences(
             userId = userId,

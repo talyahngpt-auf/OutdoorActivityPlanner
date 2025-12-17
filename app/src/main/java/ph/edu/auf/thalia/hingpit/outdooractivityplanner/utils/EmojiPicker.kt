@@ -45,9 +45,8 @@ fun EmojiTextField(
     OutlinedTextField(
         value = emoji,
         onValueChange = { newValue ->
-            // Only take the first emoji character
             if (newValue.isNotEmpty()) {
-                onEmojiChange(newValue.take(2)) // Take 2 to handle complex emojis
+                onEmojiChange(newValue.take(2))
             } else {
                 onEmojiChange(newValue)
             }
@@ -140,7 +139,6 @@ fun EmojiPickerDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
 
-                // Large preview
                 Surface(
                     modifier = Modifier.size(100.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
@@ -160,7 +158,6 @@ fun EmojiPickerDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
 
-                // Emoji input field
                 EmojiTextField(
                     emoji = tempEmoji,
                     onEmojiChange = { tempEmoji = it },
@@ -219,7 +216,7 @@ fun QuickEmojiSelector(
         Spacer(modifier = Modifier.height(8.dp))
 
 
-        // Quick pick emojis (most commonly used for activities)
+        // most commonly used for activities
         val quickEmojis = listOf(
             "📌", "✅", "🎯", "⭐", "💡", "🔥", "💪", "🎨",
             "📚", "✍️", "🎵", "🎮", "☕", "🍕", "🏃", "🚴",
@@ -227,7 +224,6 @@ fun QuickEmojiSelector(
         )
 
 
-        // Grid of quick emojis
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             quickEmojis.chunked(8).forEach { row ->
                 Row(

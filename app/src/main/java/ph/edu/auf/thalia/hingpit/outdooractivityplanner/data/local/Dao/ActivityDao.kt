@@ -24,19 +24,18 @@ interface ActivityDao {
     @Delete
     suspend fun deleteActivity(activity: ActivityEntity)
 
+    @Query("SELECT * FROM activities WHERE userId = :userId ORDER BY createdAt DESC")
+    suspend fun getAllActivities(userId: String): List<ActivityEntity>
 
-    @Query("SELECT * FROM activities ORDER BY createdAt DESC")
-    suspend fun getAllActivities(): List<ActivityEntity>
+    @Query("SELECT * FROM activities WHERE userId = :userId AND date = :date ORDER BY createdAt DESC")
+    suspend fun getActivitiesByDate(userId: String, date: String): List<ActivityEntity>
 
+    @Query("SELECT * FROM activities WHERE userId = :userId AND isCompleted = 0 ORDER BY createdAt DESC")
+    suspend fun getPendingActivities(userId: String): List<ActivityEntity>
 
-    @Query("SELECT * FROM activities WHERE date = :date ORDER BY createdAt DESC")
-    suspend fun getActivitiesByDate(date: String): List<ActivityEntity>
+    @Query("SELECT * FROM activities WHERE userId = :userId AND isCompleted = 1 ORDER BY createdAt DESC")
+    suspend fun getCompletedActivities(userId: String): List<ActivityEntity>
 
-
-    @Query("SELECT * FROM activities WHERE isCompleted = 0 ORDER BY createdAt DESC")
-    suspend fun getPendingActivities(): List<ActivityEntity>
-
-
-    @Query("SELECT * FROM activities WHERE isCompleted = 1 ORDER BY createdAt DESC")
-    suspend fun getCompletedActivities(): List<ActivityEntity>
+    @Query("DELETE FROM activities WHERE userId = :userId")
+    suspend fun deleteAllActivitiesByUser(userId: String)
 }

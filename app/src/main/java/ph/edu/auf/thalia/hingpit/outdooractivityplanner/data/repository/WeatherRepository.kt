@@ -10,29 +10,23 @@ class WeatherRepository(
     private val weatherCacheDao: WeatherCacheDao
 ) {
 
-    // -------------------------------------------------------
     // FETCH CURRENT WEATHER BY CITY (with local caching fallback)
-    // -------------------------------------------------------
     suspend fun fetchCurrentByCity(city: String, apiKey: String): CurrentWeatherResponse? {
         return try {
             val response = api.currentByCity(city = city, apiKey = apiKey)
 
-            // Save to cache
             cacheCurrentWeather(city, response)
 
             response
         } catch (e: Exception) {
             e.printStackTrace()
 
-            // fallback → return cached weather (if any)
             getCached(city)
             null
         }
     }
 
-    // -------------------------------------------------------
     // FETCH CURRENT WEATHER BY COORDINATES
-    // -------------------------------------------------------
     suspend fun fetchCurrentByCoordinates(lat: Double, lon: Double, apiKey: String): CurrentWeatherResponse? {
         return try {
             val response = api.currentByCoordinates(lat = lat, lon = lon, apiKey = apiKey)
@@ -61,9 +55,6 @@ class WeatherRepository(
         weatherCacheDao.insertWeatherCache(weatherCache)
     }
 
-    // -------------------------------------------------------
-    // FETCH FORECAST (Free 5-day/3-hour API)
-    // -------------------------------------------------------
     suspend fun fetchForecast(lat: Double, lon: Double, apiKey: String): ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.network.FiveDayForecastResponse? {
         return try {
             api.fiveDayForecast(lat = lat, lon = lon, apiKey = apiKey)
@@ -73,9 +64,7 @@ class WeatherRepository(
         }
     }
 
-    // -------------------------------------------------------
-    // GET CACHED WEATHER (offline support)
-    // -------------------------------------------------------
+    // (offline support)
     suspend fun getCached(city: String): WeatherCache? {
         return weatherCacheDao.getWeatherCache(city)
     }

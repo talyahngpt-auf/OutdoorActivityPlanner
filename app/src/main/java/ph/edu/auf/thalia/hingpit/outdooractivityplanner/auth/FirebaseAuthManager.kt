@@ -60,8 +60,6 @@ class FirebaseAuthManager(private val context: Context) {
     }
 
     // ========== EMAIL/PASSWORD AUTHENTICATION ==========
-
-    // Sign up with email and password
     suspend fun signUpWithEmail(
         email: String,
         password: String,
@@ -97,6 +95,7 @@ class FirebaseAuthManager(private val context: Context) {
             Result.failure(e)
         }
     }
+
 
     // Sign in anonymously
     suspend fun signInAnonymously(): Result<FirebaseUser> {

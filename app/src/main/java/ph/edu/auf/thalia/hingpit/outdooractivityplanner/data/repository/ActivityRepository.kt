@@ -12,38 +12,34 @@ class ActivityRepository(private val activityDao: ActivityDao) {
         activityDao.insertActivity(activity)
     }
 
-
     suspend fun insertActivities(activities: List<ActivityEntity>) {
         activityDao.insertActivities(activities)
     }
-
 
     suspend fun updateActivity(activity: ActivityEntity) {
         activityDao.updateActivity(activity)
     }
 
-
     suspend fun deleteActivity(activity: ActivityEntity) {
         activityDao.deleteActivity(activity)
     }
 
-
-    suspend fun getAllActivities(): List<ActivityEntity> {
-        return activityDao.getAllActivities()
+    suspend fun getAllActivities(userId: String): List<ActivityEntity> {
+        return activityDao.getAllActivities(userId)
+    }
+    suspend fun getActivitiesByDate(userId: String, date: String): List<ActivityEntity> {
+        return activityDao.getActivitiesByDate(userId, date)
     }
 
-
-    suspend fun getActivitiesByDate(date: String): List<ActivityEntity> {
-        return activityDao.getActivitiesByDate(date)
+    suspend fun getPendingActivities(userId: String): List<ActivityEntity> {
+        return activityDao.getPendingActivities(userId)
     }
 
-
-    suspend fun getPendingActivities(): List<ActivityEntity> {
-        return activityDao.getPendingActivities()
+    suspend fun getCompletedActivities(userId: String): List<ActivityEntity> {
+        return activityDao.getCompletedActivities(userId)
+    }
+    suspend fun deleteAllActivitiesByUser(userId: String) {
+        activityDao.deleteAllActivitiesByUser(userId)
     }
 
-
-    suspend fun getCompletedActivities(): List<ActivityEntity> {
-        return activityDao.getCompletedActivities()
-    }
 }

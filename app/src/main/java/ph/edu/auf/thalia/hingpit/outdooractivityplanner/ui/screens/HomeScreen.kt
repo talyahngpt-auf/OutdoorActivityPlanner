@@ -98,7 +98,6 @@ fun HomeScreen(
             )
         },
         bottomBar = { BottomNavigationBar(navController) },
-        // ✅ ADD THIS: Floating Action Button
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showCustomActivityDialog = true },
@@ -411,7 +410,7 @@ fun HomeScreen(
         )
     }
 
-    // ✅ Dialog for creating custom activities from scratch
+    // Dialog for creating custom activities from scratch
     if (showCustomActivityDialog) {
         AddActivityDialog(
             activity = null,  // Pass null to create from scratch

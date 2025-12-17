@@ -72,7 +72,6 @@ fun LoginScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // App Logo/Title
                 Text(
                     text = "🌤️",
                     style = MaterialTheme.typography.displayLarge
@@ -94,7 +93,6 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Email Field
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
@@ -108,7 +106,6 @@ fun LoginScreen(
                     enabled = !isLoading
                 )
 
-                // Password Field
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
@@ -131,7 +128,6 @@ fun LoginScreen(
                     enabled = !isLoading
                 )
 
-                // Error Message
                 errorMessage?.let { error ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -150,7 +146,6 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Sign In Button
                 Button(
                     onClick = {
                         authViewModel.signInWithEmail(email.trim(), password)
@@ -168,7 +163,6 @@ fun LoginScreen(
                     }
                 }
 
-                // Sign Up Button
                 OutlinedButton(
                     onClick = {
                         navController.navigate("signup")
@@ -179,7 +173,6 @@ fun LoginScreen(
                     Text("Create Account")
                 }
 
-                // Forgot Password
                 TextButton(
                     onClick = {
                         navController.navigate("forgot_password")
@@ -191,7 +184,6 @@ fun LoginScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                // Google Sign In
                 OutlinedButton(
                     onClick = {
                         val signInIntent = authViewModel.authManager.getGoogleSignInIntent()
@@ -201,9 +193,8 @@ fun LoginScreen(
                     enabled = !isLoading
                 ) {
 
-                // Google Logo - You'll need to add the Google logo drawable
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_google_logo), // Replace with actual Google logo
+                    painter = painterResource(id = R.drawable.ic_google_logo),
                     contentDescription = "Google Logo",
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurface
@@ -212,7 +203,6 @@ fun LoginScreen(
                 Text("Continue with Google")
                 }
 
-                // Continue as Guest
                 OutlinedButton(
                     onClick = {
                         authViewModel.signInAnonymously()

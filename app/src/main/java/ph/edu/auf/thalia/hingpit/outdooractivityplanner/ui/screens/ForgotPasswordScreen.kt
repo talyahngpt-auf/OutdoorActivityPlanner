@@ -126,7 +126,6 @@ fun ForgotPasswordScreen(
                         Text("Back to Sign In")
                     }
                 } else {
-                    // Email sent confirmation
                     Text(
                         text = "✉️",
                         style = MaterialTheme.typography.displayLarge

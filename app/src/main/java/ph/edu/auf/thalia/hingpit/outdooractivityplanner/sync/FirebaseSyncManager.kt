@@ -21,7 +21,7 @@ class FirebaseSyncManager {
     }
 
 
-    // ========== ACTIVITIES SYNC ==========
+    // ACTIVITIES SYNC
 
 
     suspend fun syncActivitiesToCloud(userId: String, activities: List<ActivityEntity>): Result<Unit> {
@@ -119,7 +119,7 @@ class FirebaseSyncManager {
     }
 
 
-    // ========== PREFERENCES SYNC ==========
+    // PREFERENCES SYNC
 
 
     suspend fun syncPreferencesToCloud(userId: String, preferences: UserPreferences): Result<Unit> {
@@ -186,7 +186,7 @@ class FirebaseSyncManager {
     }
 
 
-    // ========== FULL SYNC ==========
+    // FULL SYNC
 
 
     suspend fun performFullSync(
@@ -223,7 +223,7 @@ class FirebaseSyncManager {
     }
 
 
-    // ========== DELETE USER DATA ==========
+    // DELETE USER DATA
 
 
     suspend fun deleteAllUserData(userId: String): Result<Unit> {

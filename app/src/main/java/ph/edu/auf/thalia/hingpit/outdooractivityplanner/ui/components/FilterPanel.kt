@@ -49,7 +49,6 @@ fun FilterPanel(
     var expanded by remember { mutableStateOf(false) }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // Toggle button card
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -78,7 +77,6 @@ fun FilterPanel(
             }
         }
 
-        // Expandable dropdowns
         AnimatedVisibility(
             visible = expanded,
             enter = expandVertically() + fadeIn(),
@@ -95,7 +93,6 @@ fun FilterPanel(
                     modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    // Time Filter
                     if (showTimeFilter && selectedTimeFilter != null && onTimeFilterChange != null) {
                         DropdownSection(
                             title = "Time Period",
@@ -124,7 +121,6 @@ fun FilterPanel(
                         }
                     }
 
-                    // Status Filter
                     if (showStatusFilter && selectedStatusFilter != null && onStatusFilterChange != null) {
                         DropdownSection(
                             title = "Status",
@@ -136,7 +132,6 @@ fun FilterPanel(
                         )
                     }
 
-                    // Category Filter
                     DropdownSection(
                         title = "Category",
                         options = ActivityCategory.values().map { it.toDisplayString() },
@@ -147,7 +142,6 @@ fun FilterPanel(
                         }
                     )
 
-                    // Location Filter
                     DropdownSection(
                         title = "Location",
                         options = LocationType.values().map { it.toDisplayString() },
@@ -158,7 +152,6 @@ fun FilterPanel(
                         }
                     )
 
-                    // Clear All Filters
                     OutlinedButton(
                         onClick = {
                             onCategoryChange(null)

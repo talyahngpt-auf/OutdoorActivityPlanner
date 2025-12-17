@@ -19,7 +19,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 
-// ============ ADD ACTIVITY DIALOG ============
+// ADD ACTIVITY DIALOG
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddActivityDialog(
@@ -79,7 +79,6 @@ fun AddActivityDialog(
         title = { Text(text = if (activity != null) "Add to Plan" else "Create Activity") },
         text = {
             LazyColumn {
-                // Weather preview
                 item {
                     weatherData?.let { weather ->
                         Surface(
@@ -98,7 +97,6 @@ fun AddActivityDialog(
                     }
                 }
 
-                // Emoji selector
                 item {
                     QuickEmojiSelector(
                         selectedEmoji = selectedIcon,
@@ -108,7 +106,6 @@ fun AddActivityDialog(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                // Title
                 item {
                     OutlinedTextField(
                         value = title,
@@ -121,7 +118,6 @@ fun AddActivityDialog(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // Description
                 item {
                     OutlinedTextField(
                         value = description,
@@ -134,7 +130,6 @@ fun AddActivityDialog(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // Date
                 item {
                     OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.DateRange, contentDescription = null)
@@ -144,7 +139,6 @@ fun AddActivityDialog(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // Time
                 item {
                     OutlinedButton(onClick = { showTimePicker = true }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.DateRange, contentDescription = null)
@@ -154,7 +148,6 @@ fun AddActivityDialog(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // Location dropdown
                 item {
                     ExposedDropdownMenuBox(
                         expanded = expandedLocation,
@@ -187,7 +180,6 @@ fun AddActivityDialog(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // Category dropdown
                 item {
                     ExposedDropdownMenuBox(
                         expanded = expandedCategory,
@@ -243,7 +235,6 @@ fun AddActivityDialog(
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 
-    // Date picker
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -259,7 +250,6 @@ fun AddActivityDialog(
         ) { DatePicker(state = datePickerState) }
     }
 
-    // Time picker
     if (showTimePicker) {
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
@@ -277,7 +267,7 @@ fun AddActivityDialog(
 
 
 
-// ============ EDIT ACTIVITY DIALOG ============
+// EDIT ACTIVITY DIALOG
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditActivityDialog(
@@ -291,12 +281,10 @@ fun EditActivityDialog(
     var time by remember { mutableStateOf(activity.time) }
     var icon by remember { mutableStateOf(activity.weatherIconCode) }
 
-    // Location dropdown
     val locationOptions = listOf("Indoor", "Outdoor", "Outdoor and Indoor")
     var selectedLocation by remember { mutableStateOf(activity.locationType) }
     var expandedLocation by remember { mutableStateOf(false) }
 
-    // Category dropdown
     val categoryOptions = listOf(
         "Food", "Fitness", "Leisure", "Cultural", "Shopping", "Nature",
         "Social", "Wellness", "Entertainment", "Religious", "Educational"
@@ -304,7 +292,6 @@ fun EditActivityDialog(
     var selectedCategory by remember { mutableStateOf(activity.category) }
     var expandedCategory by remember { mutableStateOf(false) }
 
-    // Date & Time pickers
     val calendar = remember { Calendar.getInstance() }
     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
@@ -321,7 +308,6 @@ fun EditActivityDialog(
         title = { Text("Edit Activity") },
         text = {
             LazyColumn {
-                // Title
                 item {
                     OutlinedTextField(
                         value = title,
@@ -333,7 +319,6 @@ fun EditActivityDialog(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // Description
                 item {
                     OutlinedTextField(
                         value = description,
@@ -346,7 +331,6 @@ fun EditActivityDialog(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // Date
                 item {
                     OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.DateRange, contentDescription = null)
@@ -356,7 +340,6 @@ fun EditActivityDialog(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // Time
                 item {
                     OutlinedButton(onClick = { showTimePicker = true }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.DateRange, contentDescription = null)
@@ -366,7 +349,6 @@ fun EditActivityDialog(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // Location dropdown
                 item {
                     ExposedDropdownMenuBox(
                         expanded = expandedLocation,
@@ -399,7 +381,6 @@ fun EditActivityDialog(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // Category dropdown
                 item {
                     ExposedDropdownMenuBox(
                         expanded = expandedCategory,
@@ -453,7 +434,6 @@ fun EditActivityDialog(
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 
-    // Date picker
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -469,7 +449,6 @@ fun EditActivityDialog(
         ) { DatePicker(state = datePickerState) }
     }
 
-    // Time picker
     if (showTimePicker) {
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
@@ -485,7 +464,7 @@ fun EditActivityDialog(
     }
 }
 
-// ============ DELETE CONFIRMATION DIALOG ============
+// DELETE CONFIRMATION DIALOG
 @Composable
 fun DeleteConfirmationDialog(
     activity: ActivityEntity,

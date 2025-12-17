@@ -35,7 +35,6 @@ import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.repository.UserPref
 
 
 class MainActivity : ComponentActivity() {
-    // Lazy initialization of dependencies
     private val database by lazy { AppDatabase.getDatabase(this) }
     private val weatherApi by lazy {
         RetrofitFactory.create(Constants.WEATHER_BASE_URL)
@@ -97,7 +96,7 @@ fun MainApp(
 
 
 
-    // ✅ Request location permissions at startup
+    // Request location permissions at startup
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
         onResult = { permissions ->
@@ -124,7 +123,7 @@ fun MainApp(
             )
         }
     }
-    // Create unified factory
+
     val weatherFactory = remember {
         AppViewModelFactory(
             weatherRepository = weatherRepository,
@@ -157,7 +156,6 @@ fun MainApp(
     }
 
 
-    // Create ViewModels
     val weatherViewModel: WeatherViewModel = viewModel(factory = weatherFactory)
     val activityViewModel: ActivityViewModel = viewModel(factory = activityFactory)
     val authViewModel: AuthViewModel = viewModel(factory = authFactory)
@@ -167,11 +165,10 @@ fun MainApp(
     val authState by authViewModel.authState.collectAsState()
 
 
-    // Track if we've shown splash
+    // Track if splash was shown
     var hasShownSplash by remember { mutableStateOf(false) }
 
 
-    // Determine destination
     val startDestination = if (!hasShownSplash) {
         "splash"
     } else {
@@ -182,8 +179,6 @@ fun MainApp(
         }
     }
 
-
-    // ✅ KEEP YOUR EXISTING NAVIGATION LOGIC
     LaunchedEffect(authState) {
         // Only navigate after splash is done
         if (hasShownSplash) {
@@ -210,6 +205,17 @@ fun MainApp(
         }
     }
 
+    LaunchedEffect(authState) {
+        when (val state = authState) {
+            is AuthState.Authenticated -> {
+                activityViewModel.setCurrentUser(state.user.uid)
+            }
+            is AuthState.Unauthenticated -> {
+                activityViewModel.setCurrentUser("") // Clear activities
+            }
+            else -> {}
+        }
+    }
 
     NavHost(
         navController = navController,

@@ -23,7 +23,6 @@ object TimeOfDayUtils {
             val hour = parseHourFromTime(activity.time)
             getTimeOfDay(hour)
         }.toSortedMap(compareBy { label ->
-            // Sort by enum order
             TimeOfDay.values().indexOfFirst { it.label == label }
         })
     }

@@ -21,7 +21,7 @@ class LocationProvider(private val context: Context) {
         LocationServices.getFusedLocationProviderClient(context)
 
     suspend fun getLastLocation(): Location? = suspendCancellableCoroutine { continuation ->
-        // ✅ Check permissions before accessing location
+        // Check permissions first
         val fineGranted = ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED

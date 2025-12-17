@@ -1,7 +1,6 @@
 package ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.screens
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,12 +13,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.google.accompanist.flowlayout.FlowRow
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.data.local.ActivityEntity
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.ui.components.*
 import ph.edu.auf.thalia.hingpit.outdooractivityplanner.utils.ActivityCategory
@@ -38,7 +35,7 @@ fun ActivityLogScreen(
     val allActivities by activityViewModel.activities.collectAsState()
     val isLoading by activityViewModel.isLoading.collectAsState()
 
-    // Filter states
+
     var selectedFilter by remember { mutableStateOf(FilterType.ALL) }
     var selectedStatus by remember { mutableStateOf(StatusFilter.ALL) }
     var selectedCategory by remember { mutableStateOf<ActivityCategory?>(null) }
@@ -144,8 +141,6 @@ fun ActivityLogScreen(
                     )
                 }
 
-
-                // Stats Card
                 item {
                     EnhancedCompactStatsCard(
                         totalCount = totalCount,
@@ -154,7 +149,6 @@ fun ActivityLogScreen(
                     )
                 }
 
-                // Loading State
                 if (isLoading) {
                     item {
                         Box(
@@ -171,7 +165,6 @@ fun ActivityLogScreen(
                     }
                 }
 
-                // Activity entries grouped by date
                 if (groupedActivities.isNotEmpty() && !isLoading) {
                     groupedActivities.forEach { (date, activities) ->
                         item {
@@ -199,7 +192,6 @@ fun ActivityLogScreen(
                     }
                 }
 
-                // Empty State
                 if (filteredActivities.isEmpty() && !isLoading) {
                     item {
                         Card(
@@ -263,7 +255,6 @@ fun ActivityLogScreen(
         }
     }
 
-    // Use your original dialogs with DateRangePickerDialog from the log screen
     if (showDateRangeDialog) {
         DateRangePickerDialog(
             onDismiss = { showDateRangeDialog = false },
@@ -451,7 +442,6 @@ fun EnhancedDateHeader(date: String, count: Int) {
     }
 }
 
-// Keep the original DateRangePickerDialog from your file
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DateRangePickerDialog(
@@ -594,7 +584,6 @@ fun DateRangePickerDialog(
     }
 }
 
-// Filter enums and functions
 enum class FilterType(val label: String) {
     ALL("All Time"),
     TODAY("Today"),

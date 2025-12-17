@@ -84,7 +84,6 @@ fun AccountManagementScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Success Message
             successMessage?.let { message ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -105,8 +104,6 @@ fun AccountManagementScreen(
                     }
                 }
             }
-
-            // Error Message
             errorMessage?.let { message ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -128,7 +125,6 @@ fun AccountManagementScreen(
                 }
             }
 
-            // Password Section
             Text(
                 text = "Password",
                 style = MaterialTheme.typography.titleLarge,
@@ -169,7 +165,6 @@ fun AccountManagementScreen(
                 }
             }
 
-            // Linked Accounts Section
             Text(
                 text = "Linked Accounts",
                 style = MaterialTheme.typography.titleLarge,
@@ -211,7 +206,6 @@ fun AccountManagementScreen(
                 }
             }
 
-            // Info Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -236,7 +230,6 @@ fun AccountManagementScreen(
         }
     }
 
-    // Dialogs
     if (showChangePasswordDialog) {
         ChangePasswordDialog(
             onDismiss = { showChangePasswordDialog = false },

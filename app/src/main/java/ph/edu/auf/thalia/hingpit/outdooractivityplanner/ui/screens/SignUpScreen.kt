@@ -81,8 +81,7 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Display Name Field
-                OutlinedTextField(
+                 OutlinedTextField(
                     value = displayName,
                     onValueChange = { displayName = it },
                     label = { Text("Display Name") },
@@ -94,8 +93,7 @@ fun SignUpScreen(
                     enabled = !isLoading
                 )
 
-                // Email Field
-                OutlinedTextField(
+                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
                     label = { Text("Email") },
@@ -108,8 +106,7 @@ fun SignUpScreen(
                     enabled = !isLoading
                 )
 
-                // Password Field
-                OutlinedTextField(
+                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
                     label = { Text("Password") },
@@ -137,8 +134,7 @@ fun SignUpScreen(
                     isError = password.isNotEmpty() && password.length < 6
                 )
 
-                // Confirm Password Field
-                OutlinedTextField(
+                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
                     label = { Text("Confirm Password") },
@@ -166,8 +162,7 @@ fun SignUpScreen(
                     isError = confirmPassword.isNotEmpty() && !passwordMatch
                 )
 
-                // Error Message
-                errorMessage?.let { error ->
+                 errorMessage?.let { error ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
@@ -185,8 +180,7 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Sign Up Button
-                Button(
+                 Button(
                     onClick = {
                         authViewModel.signUpWithEmail(
                             email.trim(),
@@ -207,8 +201,7 @@ fun SignUpScreen(
                     }
                 }
 
-                // Already have account
-                Row(
+                 Row(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {

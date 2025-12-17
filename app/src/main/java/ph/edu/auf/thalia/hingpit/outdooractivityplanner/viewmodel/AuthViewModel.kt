@@ -65,7 +65,7 @@ class AuthViewModel(
     }
 
 
-    // ========== EMAIL/PASSWORD AUTHENTICATION ==========
+    // EMAIL/PASSWORD AUTHENTICATION
 
 
     fun signUpWithEmail(email: String, password: String, displayName: String? = null) {
@@ -157,7 +157,7 @@ class AuthViewModel(
     }
 
 
-    // ========== GOOGLE SIGN-IN ==========
+    // GOOGLE SIGN-IN
 
 
     fun signInWithGoogle(account: GoogleSignInAccount) {
@@ -244,7 +244,7 @@ class AuthViewModel(
     fun isGoogleLinked(): Boolean = authManager.isGoogleLinked()
 
 
-    // ========== PASSWORD MANAGEMENT ==========
+    // PASSWORD MANAGEMENT
 
 
     fun hasPassword(): Boolean = authManager.hasPassword()
@@ -322,7 +322,7 @@ class AuthViewModel(
     }
 
 
-    // ========== ACCOUNT MANAGEMENT ==========
+    // ACCOUNT MANAGEMENT
 
 
     fun signOut() {

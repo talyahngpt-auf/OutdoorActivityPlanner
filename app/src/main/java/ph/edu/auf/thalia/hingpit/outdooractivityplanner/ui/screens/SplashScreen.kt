@@ -26,8 +26,7 @@ fun SplashScreen(
 ) {
     val authState by authViewModel.authState.collectAsState()
 
-    // Animation for app logo
-    val infiniteTransition = rememberInfiniteTransition(label = "splash_animation")
+     val infiniteTransition = rememberInfiniteTransition(label = "splash_animation")
     val scale by infiniteTransition.animateFloat(
         initialValue = 0.9f,
         targetValue = 1.1f,
@@ -39,8 +38,7 @@ fun SplashScreen(
     )
 
     LaunchedEffect(Unit) {
-        // Show splash for 2 seconds
-        delay(2000)
+         delay(2000)
 
         onSplashComplete()
     }
@@ -61,7 +59,6 @@ fun SplashScreen(
                 modifier = Modifier.scale(scale * 1.5f)
             )
 
-            // App Name
             Text(
                 text = "W.A.R.M",
                 style = MaterialTheme.typography.headlineLarge,
@@ -77,7 +74,6 @@ fun SplashScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Loading indicator
             Text(
                 text = "Initializing...",
                 style = MaterialTheme.typography.bodyMedium,

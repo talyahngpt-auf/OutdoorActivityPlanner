@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 data class ActivityEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
+    val userId: String = "",
     val title: String = "",
     val description: String = "",
     val date: String = "",

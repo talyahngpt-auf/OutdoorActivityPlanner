@@ -9,9 +9,9 @@ import androidx.room.PrimaryKey
 data class UserPreferencesEntity(
     @PrimaryKey
     val userId: String = "",
-    val favoriteActivityTypes: String = "", // Comma-separated: "outdoor,sports,relaxation"
-    val preferredWeatherConditions: String = "", // "sunny,cloudy"
-    val preferredTimeOfDay: String = "", // "morning,afternoon,evening"
+    val favoriteActivityTypes: String = "",
+    val preferredWeatherConditions: String = "",
+    val preferredTimeOfDay: String = "",
     val notificationsEnabled: Boolean = true,
     val syncEnabled: Boolean = true,
     val lastSyncTimestamp: Long = 0L,
@@ -20,7 +20,6 @@ data class UserPreferencesEntity(
 )
 
 
-// Helper data class for preferences
 data class UserPreferences(
     val userId: String = "",
     val favoriteActivityTypes: List<String> = emptyList(),

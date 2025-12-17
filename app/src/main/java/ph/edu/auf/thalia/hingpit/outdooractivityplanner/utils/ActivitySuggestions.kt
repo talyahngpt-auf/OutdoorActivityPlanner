@@ -73,7 +73,7 @@ enum class LocationType {
         return when (this) {
             INDOOR -> "Indoor"
             OUTDOOR -> "Outdoor"
-            FLEXIBLE -> "Outdoor and Indoor"
+            FLEXIBLE -> "Outdoor & Indoor"
         }
     }
 }
@@ -95,9 +95,6 @@ enum class ActivityCategory {
     }
 }
 
-// ============================================================
-// PRE-DEFINED WEATHER SUITABILITY MAPS
-// ============================================================
 
 val OUTDOOR_CLEAR = mapOf(
     WeatherCondition.CLEAR to WeatherSuitability.PERFECT,
@@ -138,9 +135,7 @@ val COVERED_OUTDOOR = mapOf(
     WeatherCondition.THUNDERSTORM to WeatherSuitability.AVOID
 )
 
-// ============================================================
 // ENHANCED ACTIVITY DATA CLASS
-// ============================================================
 
 data class Activity(
     val title: String,
@@ -185,9 +180,7 @@ fun createActivity(
     category: ActivityCategory
 ) = Activity(title, description, icon, weather, temps, times, location, intensity, category)
 
-// ============================================================
 // ACTIVITY MASTER LIST
-// ============================================================
 
 object ActivityMasterList {
 

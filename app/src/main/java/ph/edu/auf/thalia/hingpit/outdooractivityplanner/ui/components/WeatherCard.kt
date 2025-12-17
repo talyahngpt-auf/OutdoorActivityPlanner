@@ -25,7 +25,6 @@ fun WeatherCard(weather: CurrentWeatherResponse) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Weather Icon (smaller)
             weather.weather.firstOrNull()?.let { weatherDesc ->
                 AsyncImage(
                     model = "https://openweathermap.org/img/wn/${weatherDesc.icon}@2x.png",
@@ -36,7 +35,6 @@ fun WeatherCard(weather: CurrentWeatherResponse) {
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Main weather info
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -60,7 +58,6 @@ fun WeatherCard(weather: CurrentWeatherResponse) {
                 )
             }
 
-            // Compact details column
             Column(
                 horizontalAlignment = Alignment.End
             ) {

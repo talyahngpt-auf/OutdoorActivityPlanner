@@ -87,7 +87,7 @@ class WeatherViewModel(
         }
     }
 
-    // Fetch current weather by city name (for testing)
+    // Fetch current weather by city name
     fun getCurrentWeatherByCity(city: String, apiKey: String) {
         viewModelScope.launch {
             try {
@@ -98,7 +98,6 @@ class WeatherViewModel(
                 _currentWeather.value = null
                 _forecast.value = null
 
-                // First, try with Philippines country code for common PH cities
                 var response = if (isLikelyPhilippineCity(city)) {
                     repository.fetchCurrentByCity("$city,PH", apiKey)
                 } else {
@@ -129,7 +128,7 @@ class WeatherViewModel(
 
                 if (response != null) {
                     _currentWeather.value = response
-                    _errorMessage.value = null // Clear any "Trying..." message
+                    _errorMessage.value = null
 
                     // After getting current weather, fetch forecast using coordinates
                     val forecastResponse = repository.fetchForecast(
@@ -166,13 +165,12 @@ class WeatherViewModel(
         return philippineCities.any { city.lowercase().contains(it) }
     }
 
-    // Get cached weather for offline support
+    // for offline support
     fun getCachedWeather(city: String) {
         viewModelScope.launch {
             try {
                 val cached = repository.getCached(city)
                 if (cached != null) {
-                    // Convert cached data to display format if needed
                     _errorMessage.value = "Showing cached data for $city"
                 } else {
                     _errorMessage.value = "No cached data available"

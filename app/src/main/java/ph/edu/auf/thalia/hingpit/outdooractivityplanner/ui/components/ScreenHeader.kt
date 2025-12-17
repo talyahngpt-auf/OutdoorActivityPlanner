@@ -15,7 +15,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// Unified header component for all screens
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScreenHeader(
@@ -54,7 +53,6 @@ fun ScreenHeader(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Left side: Back button (if needed) + Title
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.weight(1f)
@@ -72,7 +70,6 @@ fun ScreenHeader(
                             }
                         }
 
-                        // Icon (if provided)
                         if (icon != null) {
                             Icon(
                                 imageVector = icon,
@@ -102,7 +99,6 @@ fun ScreenHeader(
                         }
                     }
 
-                    // Right side: Actions
                     Row(
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
@@ -115,7 +111,6 @@ fun ScreenHeader(
     }
 }
 
-// Special header for Home screen with W.A.R.M branding
 @Composable
 fun HomeHeader(
     actions: @Composable RowScope.() -> Unit = {}
@@ -148,7 +143,6 @@ fun HomeHeader(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // W.A.R.M Branding
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {

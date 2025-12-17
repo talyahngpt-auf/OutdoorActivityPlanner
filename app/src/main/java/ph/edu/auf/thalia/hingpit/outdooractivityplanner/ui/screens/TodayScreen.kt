@@ -50,7 +50,6 @@ fun TodayScreen(
     val isLoading by activityViewModel.isLoading.collectAsState()
     val errorMessage by activityViewModel.errorMessage.collectAsState()
 
-    // Filters
     var selectedCategory by remember { mutableStateOf<ActivityCategory?>(null) }
     var selectedLocation by remember { mutableStateOf<LocationType?>(null) }
 
@@ -151,8 +150,8 @@ fun TodayScreen(
                         onCategoryChange = { selectedCategory = it },
                         selectedLocation = selectedLocation,
                         onLocationChange = { selectedLocation = it },
-                        showTimeFilter = false, // TodayScreen doesn't need time filter
-                        showStatusFilter = false // TodayScreen doesn't need status filter
+                        showTimeFilter = false,
+                        showStatusFilter = false
                     )
                 }
 
